@@ -1,7 +1,7 @@
 <template>
     <div class="logo-container"
          @click="$router.push('/')">
-        <logo class="logo"></logo>
+        <logo-icon class="logo"></logo-icon>
         <div class="app-slogan">
             Kube Arc
         </div>
@@ -9,11 +9,11 @@
 </template>
 <script lang="ts">
 import { Vue, Component } from "vue-property-decorator";
-import Logo from "~assets/icons/triangle.svg"
+import LogoIcon from "~/assets/icons/triangle.svg"
 
 @Component({
     components:{
-        Logo
+        LogoIcon
     }
 })
 export default class AppLogo extends Vue {
@@ -23,11 +23,11 @@ export default class AppLogo extends Vue {
 
 <style>
 .logo {
-    color: #20ac90;
+    /* color: #20ac90;
     transform: translate(-16px, -6px) scale(0.5);
     display: inline-block;
     position: relative;
-    fill: currentColor;
+    fill: currentColor; */
 }
 .logo-container {
     display: inline-block;
@@ -43,12 +43,9 @@ export default class AppLogo extends Vue {
 .app-slogan {
     color: #20ac90;
     font-weight: 600;
-    font-size: 2rem;
-    padding-left: 0px;
+    font-size: 1rem;
+    padding: 5px;
     position: relative;
-    top: -32px;
-    left: -32px;
     display: inline-block;
-    /* text-shadow: 0 1px 1px #22927a; */
 }
 </style>

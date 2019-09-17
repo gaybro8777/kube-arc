@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator'
-import Page from "~/components/page/default"
+import Page from "~/components/page/default.vue"
 
 @Component(
   {
