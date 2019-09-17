@@ -1,2 +1,2 @@
-# Kube-Designer
+# Kube Arc
 Kubernetes micro service designer
