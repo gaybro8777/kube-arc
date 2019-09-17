@@ -1,0 +1,21 @@
+{
+  "name": "frontend-web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "post-update": "yarn upgrade --latest"
+  },
+  "dependencies": {
+    "element-ui": "^2.12.0",
+    "nuxt": "latest",
+    "vue-property-decorator": "latest"
+  },
+  "devDependencies": {
+    "@nuxt/typescript-build": "^0.2.8"
+  }
+}
