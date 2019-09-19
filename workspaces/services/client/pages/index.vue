@@ -189,20 +189,16 @@
         <el-card class="box-card">
           <div slot="header" class="clearfix">
             <span>Domain</span>
+            <!-- <div class="btn" style="position:relative;"> -->
             <el-button
               size="mini"
-              style="float: right; padding: 5px"
-              type="primary"
-            >
-              Done
-            </el-button>
-            <el-button
-              style="float: right; padding: 3px 5px"
               type="text"
               icon="el-icon-delete"
+              style="float: right; padding: 3px 0; color: red;"
             >
               Delete
             </el-button>
+            <!-- </div> -->
           </div>
           <el-form
             label-position="right"
@@ -213,6 +209,15 @@
               <el-input v-model="dockerRepo.image"></el-input>
             </el-form-item>
           </el-form>
+          <div class="footer" style="position:relative;height: 24px;">
+            <el-button
+              size="mini"
+              style="right:0; position:absolute"
+              type="primary"
+            >
+              Done
+            </el-button>
+          </div>
         </el-card>
       </el-row>
     </div>
