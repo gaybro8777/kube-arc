@@ -14,7 +14,7 @@
   ],
 
   "scripts": {
-    "xrun": "npm run --prefix workspaces/services/",
+    "xrun": "./scripts/xrun.js",
     "dev": "lerna run dev --stream",
     "build": "lerna run build --stream",
     "start": "lerna run start --stream",

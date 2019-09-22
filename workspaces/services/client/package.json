@@ -29,6 +29,7 @@
     "nuxt": "^2.0.0"
   },
   "devDependencies": {
+    "@01/launcher": "1.0.11",
     "@nuxt/typescript-build": "^0.2.9",
     "@nuxtjs/eslint-config": "^1.0.1",
     "@nuxtjs/eslint-module": "^1.0.0",

@@ -30,195 +30,25 @@
       </el-row>
       <el-row class="row-block">
         <!-- DOCKER IMAGE CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Docker Image</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Tag">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <docker-image></docker-image>
 
         <!-- SERVICE CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Service</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <service></service>
 
         <!-- DEPLOYMENT CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Deployment</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <deployment></deployment>
 
         <!-- VIRTUAL SERVICE CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Virtual Service</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <virtual-service></virtual-service>
 
         <!-- DESTINATION RULE CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Destination Rule</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <destination-rule></destination-rule>
 
         <!-- GATEWAY CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Gateway</span>
-            <el-button
-              style="float: right; padding: 3px 0"
-              type="text"
-              icon="el-icon-delete"
-            >
-              Delete
-            </el-button>
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-            <el-form-item label="Image">
-              <el-input v-model="dockerRepo.tag"></el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
+        <gateway></gateway>
 
         <!-- DOMAIN CARD -->
-        <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>Domain</span>
-            <!-- <div class="btn" style="position:relative;"> -->
-            <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-delete"
-              style="float: right; padding: 3px 0; color: red;"
-            >
-              Delete
-            </el-button>
-            <!-- </div> -->
-          </div>
-          <el-form
-            label-position="right"
-            label-width="100px"
-            :model="dockerRepo"
-          >
-            <el-form-item label="Name">
-              <el-input v-model="dockerRepo.image"></el-input>
-            </el-form-item>
-          </el-form>
-          <div class="footer" style="position:relative;height: 24px;">
-            <el-button
-              size="mini"
-              style="right:0; position:absolute"
-              type="primary"
-            >
-              Done
-            </el-button>
-          </div>
-        </el-card>
+        <domain></domain>
       </el-row>
     </div>
     <div slot="footer" class="progress-bar--footer">
@@ -232,6 +62,12 @@
   width: 300px;
   margin: 20px;
   display: inline-block;
+}
+.box-card__icon {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  margin: 0 5px 0 0;
 }
 </style>
 
@@ -281,16 +117,26 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import page from '~/components/page/default.vue'
+import virtualService from '~/components/kubernetes/istio/virtual-service.vue'
+import destinationRule from '~/components/kubernetes/istio/destination-rule.vue'
+import gateway from '~/components/kubernetes/istio/gateway.vue'
+import service from '~/components/kubernetes/service.vue'
+import dockerImage from '~/components/kubernetes/docker-image.vue'
+import deployment from '~/components/kubernetes/deployment.vue'
+import domain from '~/components/dns/domain.vue'
 
 @Component({
   components: {
-    page
+    page,
+    virtualService,
+    destinationRule,
+    gateway,
+
+    service,
+    dockerImage,
+    deployment,
+    domain
   }
 })
-export default class PipelinePage extends Vue {
-  dockerRepo = {
-    image: '',
-    tag: 'latest'
-  }
-}
+export default class PipelinePage extends Vue {}
 </script>
