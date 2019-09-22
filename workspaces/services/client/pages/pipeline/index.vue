@@ -9,26 +9,6 @@
     </div>
     <div slot="content">
       <el-row class="row-block">
-        <el-col :span="4">
-          <el-button type="success">Service</el-button>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary">Deployment</el-button>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary">Virtual Service</el-button>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary">Destination Rule</el-button>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary">Gateway</el-button>
-        </el-col>
-        <el-col :span="4">
-          <el-button type="primary">Add Docker Repo</el-button>
-        </el-col>
-      </el-row>
-      <el-row class="row-block">
         <!-- DOCKER IMAGE CARD -->
         <docker-image></docker-image>
 
@@ -59,7 +39,7 @@
 
 <style lang="css">
 .box-card {
-  width: 300px;
+  width: 500px;
   margin: 20px;
   display: inline-block;
 }

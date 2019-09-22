@@ -1,6 +1,6 @@
 <template>
-  <el-card class="box-card">
-    <div slot="header" class="clearfix">
+  <div class="connected__node">
+    <div class="clearfix">
       <component :is="icon" v-if="icon" class="box-card__icon"></component>
       <span>{{ name }}</span>
       <el-button
@@ -9,23 +9,25 @@
         icon="el-icon-delete"
         style="float: right; padding: 3px 0; color: red;"
       >
-        Delete
       </el-button>
     </div>
     <slot name="content"></slot>
-    <div class="footer" style="position:relative;height: 24px;">
-      <el-button size="mini" style="right:0; position:absolute" type="primary">
-        Done
-      </el-button>
-    </div>
-  </el-card>
+  </div>
 </template>
+
+<style lang="css">
+.connected__node {
+  width: 150px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  padding: 20px;
+}
+</style>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 
 @Component({})
-export default class ResourceCard extends Vue {
+export default class Connected extends Vue {
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 }

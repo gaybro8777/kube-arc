@@ -16,8 +16,8 @@ import resourceCard from './resource-card.vue'
   }
 })
 export default class ResourceCard extends Vue {
-  @Prop({ default: () => 'Untitled' }) name: string
-  @Prop({ default: () => null }) icon: Vue
-  @Prop({ default: () => {} }) resource: any
+  @Prop({ default: () => 'Untitled' }) name!: string
+  @Prop({ default: () => null }) icon!: Vue
+  @Prop({ default: () => {} }) resource!: any
 }
 </script>
