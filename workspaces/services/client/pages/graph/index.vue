@@ -7,11 +7,7 @@
         </el-button>
       </div>
     </div>
-    <div slot="content">
-      <el-row class="row-block">
-        <connected></connected>
-      </el-row>
-    </div>
+    <connected-graph slot="content"></connected-graph>
     <div slot="footer" class="progress-bar--footer">
       <el-progress :percentage="30" color="#409eff"></el-progress>
     </div>
@@ -78,12 +74,12 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import page from '~/components/page/default.vue'
-import connected from '~/components/connected/index.vue'
+import connectedGraph from '~/components/connected-graph/index.vue'
 
 @Component({
   components: {
     page,
-    connected
+    connectedGraph
   }
 })
 export default class PipelinePage extends Vue {}
