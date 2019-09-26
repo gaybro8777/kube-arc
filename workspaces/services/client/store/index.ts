@@ -13,7 +13,6 @@ const getters = {
 }
 
 const actions = {
-  async nuxtServerInit() {}
 }
 const mutations = {}
 

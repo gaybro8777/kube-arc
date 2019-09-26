@@ -1,7 +1,7 @@
 <template>
   <div class="connected__node">
     <div class="ports">
-      <port @moveStart="onMoveStart"></port>
+      <port @moveStart="onMoveStart" @move="onMove" @moveEnd="onMoveEnd"></port>
     </div>
     <div class="clearfix">
       <component :is="icon" v-if="icon" class="box-card__icon"></component>
@@ -15,14 +15,14 @@
       </el-button>
     </div>
     <slot name="content">
-      <div>x:{{ port.x }}, y:{{ port.y }}</div>
+      <div>x:{{ port.position.x }}, y:{{ port.position.y }}</div>
     </slot>
   </div>
 </template>
 
 <style lang="css">
 .connected__node {
-  width: 150px;
+  width: 200px;
   border: 1px solid #c1cdda;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
   padding: 20px;
@@ -32,17 +32,10 @@
   border: 1px solid #409eff;
 }
 .ports {
+  left: calc(100% + 20px);
   position: relative;
   user-select: none;
-}
-.port {
-  width: 10px;
-  height: 10px;
-  background: #409eff;
-  position: absolute;
-  right: -30px;
-  top: 5px;
-  cursor: pointer;
+  z-index: 2;
 }
 </style>
 
@@ -60,11 +53,19 @@ export default class GraphNode extends Vue {
   @Prop({ default: () => 'Node' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
-  port = { x: 0, y: 0 }
+  port = { position: { x: 0, y: 0 } }
 
   onMoveStart(event: any) {
     this.port = event.port
     this.$emit(PortEvent.MOVE_START, event)
+  }
+
+  onMove(event: any) {
+    this.$emit(PortEvent.MOVE, event)
+  }
+
+  onMoveEnd(event: any) {
+    this.$emit(PortEvent.MOVE_END, event)
   }
 }
 </script>
