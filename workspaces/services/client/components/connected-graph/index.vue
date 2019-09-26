@@ -12,6 +12,8 @@
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
+      @connected="onConnect"
+      @disconnected="onDisconnect"
     >
     </graph-node>
     <graph-node
@@ -19,14 +21,22 @@
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
+      @connected="onConnect"
+      @disconnected="onDisconnect"
     >
     </graph-node>
-    <!-- <div class="dropZone" @drop="dropHandler" @dragover="dragoverHandler"></div> -->
-    <port class="dropZone"></port>
+    <port
+      class="dropZone"
+      @connected="onConnect"
+      @disconnected="onDisconnect"
+    ></port>
     <connection
-      v-if="$refs.node1 && $refs.node2"
-      :port1="$refs.node1.port"
-      :port2="$refs.node2.port"
+      class="connection"
+      :ports="ports"
+      :style="{
+        left: anchorPoint.x + 'px',
+        top: anchorPoint.y + 'px'
+      }"
     ></connection>
   </div>
 </template>
@@ -42,13 +52,22 @@
   width:100%;
   height:100%;
 }
+.connection {
+  width:100%;
+  height:100%;
+}
 </style>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
+import { Action } from 'vuex-class'
+
+import { Point } from '../common/types/point'
 import GraphNode from './node.vue'
 import connection from './connection.vue'
 import port from './port.vue'
+import { ConnectionEvent } from './events'
+import NodePort from './port.vue'
 
 @Component({
   components: {
@@ -58,10 +77,15 @@ import port from './port.vue'
   }
 })
 export default class Connected extends Vue {
+  @Action('graph/getPort') getPort!: (portId: string) => any
+
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
+  isConnectionEnabled: boolean = true
+  ports: NodePort[] = []
   isPortMoving: boolean = false
+  anchorPoint: Point = { x: 0, y: 0 }
   currentPort: any
 
   mounted() {
@@ -74,6 +98,9 @@ export default class Connected extends Vue {
   onPortMoveStart(event: any) {
     this.isPortMoving = true
     this.currentPort = event.port
+    const element = this.currentPort.$el as HTMLElement
+    this.anchorPoint.x = element.offsetLeft
+    this.anchorPoint.y = element.offsetTop
   }
   onPortMoveEnd(event: any) {
     this.isPortMoving = false
@@ -87,9 +114,15 @@ export default class Connected extends Vue {
     }
   }
 
-  onStageDropHandler(event: any) {
+  async onStageDropHandler(event: any) {
     event.preventDefault()
-    // event.dataTransfer.dropEffect = 'move'
+    const portId = event.dataTransfer.getData('text/plain')
+    console.log(`onStageDropHandler [portId:${portId}]`)
+    const droppedPort = await this.getPort(portId)
+
+    if (droppedPort) {
+      droppedPort.disconnect()
+    }
   }
 
   onStageDragoverHandler(event: any) {
@@ -97,16 +130,14 @@ export default class Connected extends Vue {
     // event.dataTransfer.dropEffect = 'move'
   }
 
-  dragoverHandler(event: any) {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'move'
+  onConnect(ports: NodePort[]) {
+    console.log('onConnect-outter:', event)
+    this.isConnectionEnabled = true
+    this.ports = ports
   }
 
-  dropHandler(event: any) {
-    console.log('dropped')
-    event.dataTransfer.dropEffect = 'move'
-    event.preventDefault()
-    this.currentPort.anchor()
+  onDisconnect(event: any) {
+    console.log(event)
   }
 }
 </script>

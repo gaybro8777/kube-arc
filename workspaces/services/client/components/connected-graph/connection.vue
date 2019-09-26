@@ -11,15 +11,13 @@
 
 <style lang="css">
 .edge-line {
-  width: 10px;
-  height: 5px;
-  background: #409eff;
   position: absolute;
 }
 </style>
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
+import NodePort from './port.vue'
 
 type Point = {
   x: number
@@ -28,13 +26,15 @@ type Point = {
 
 @Component({})
 export default class Connection extends Vue {
-  @Prop({ default: () => ({ x: 0, y: 0 }), type: Object }) point1!: Point
-  @Prop({ default: () => ({ x: 300, y: 0 }), type: Object }) point2!: Point
+  @Prop({ default: () => [], type: Array }) ports!: NodePort[]
 
   get points(): string {
-    const { x: x1, y: y1 } = this.point1
-    const { x: x2, y: y2 } = this.point2
-    return `${x1} ${y1}, ${x2} ${y2}`
+    if (this.ports.length > 1) {
+      const { x: x1, y: y1 } = this.ports[0].position
+      const { x: x2, y: y2 } = this.ports[1].position
+      return `${x1} ${y1}, ${x2} ${y2}`
+    }
+    return `0 0, 0 0`
   }
 }
 </script>

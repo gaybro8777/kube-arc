@@ -1,7 +1,13 @@
 <template>
   <div class="connected__node">
     <div class="ports">
-      <port @moveStart="onMoveStart" @move="onMove" @moveEnd="onMoveEnd"></port>
+      <port
+        @move="onMove"
+        @moveEnd="onMoveEnd"
+        @moveStart="onMoveStart"
+        @connected="onConnect"
+        @disconnected="onDisconnect"
+      ></port>
     </div>
     <div class="clearfix">
       <component :is="icon" v-if="icon" class="box-card__icon"></component>
@@ -42,7 +48,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import port from './port.vue'
-import { PortEvent } from './events'
+import { PortEvent, ConnectionEvent } from './events'
 
 @Component({
   components: {
@@ -66,6 +72,15 @@ export default class GraphNode extends Vue {
 
   onMoveEnd(event: any) {
     this.$emit(PortEvent.MOVE_END, event)
+  }
+
+  onConnect(event: any) {
+    console.log('onConnect-node:', event)
+    this.$emit(ConnectionEvent.CONNECTED, event)
+  }
+
+  onDisconnect(event: any) {
+    this.$emit(ConnectionEvent.DISCONNECTED, event)
   }
 }
 </script>

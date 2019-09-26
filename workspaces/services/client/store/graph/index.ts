@@ -6,15 +6,15 @@ type PortState = {
 
 const ADD_PORT: string = 'ADD_PORT'
 
-const state = () => ({
+export const state = () => ({
   ports: new Map<string, any>()
 })
 
-const getters = {
+export const getters = {
   ports: (state: PortState) => state.ports
 }
 
-const actions = {
+export const actions = {
   getPort({ state }: ActionContext<PortState, any>, portId: string): any {
     return state.ports.get(portId)
   },
@@ -30,15 +30,8 @@ const actions = {
     return portId
   }
 }
-const mutations = {
+export const mutations = {
   [ADD_PORT](state: PortState, { portId, port }: any) {
     state.ports.set(portId, port)
   }
-}
-
-export default {
-  state,
-  getters,
-  actions,
-  mutations
 }

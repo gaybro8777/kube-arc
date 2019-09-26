@@ -1,17 +1,21 @@
 <template>
-  <div class="port-container">
+  <div class="port-container" @drop="onDrop" @dragover="onDragOver">
     <div class="port fixed"></div>
     <div
       ref="port"
       class="port"
       draggable="true"
-      :style="{ left: anchorPoint.x + 'px', top: anchorPoint.y + 'px' }"
+      :style="{
+        left: anchorPoint.x + 'px',
+        top: anchorPoint.y + 'px',
+        background: color
+      }"
       @dragstart="onDragStart"
       @drag="onDrag"
       @dragend="onDragEnd"
     ></div>
     <!-- :style="{ left: position.x + 'px', top: position.y + 'px' }" -->
-    <div class="receptor" @drop="onDrop" @dragover="onDragOver"></div>
+    <div class="receptor"></div>
   </div>
 </template>
 
@@ -28,9 +32,8 @@
   z-index: 2;
 }
 .fixed {
-  cursor: none;
   user-select: none;
-  background: red;
+  background: #f56c6c;
   z-index: 1;
 }
 .receptor {
@@ -44,31 +47,33 @@
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
-// import { Action } from 'vuex-class'
+import { Action } from 'vuex-class'
 // eslint-disable-next-line
 import { Point } from '../common/types/point'
-import { PortEvent } from './events'
+import { PortEvent, ConnectionEvent } from './events'
 
 @Component({})
 export default class NodePort extends Vue {
   // Store actions
-  // @Action('ports/getPort') getPort!: (portId: string) => any
-  // @Action('ports/addPort') addPort!: (port: NodePort) => string
+  @Action('graph/getPort') getPort!: (portId: string) => any
+  @Action('graph/addPort') addPort!: (port: NodePort) => string
 
+  color = '#409eff'
   initialPosition = { x: 0, y: 0 }
   position = { ...this.initialPosition }
   anchorPoint = { ...this.initialPosition }
   isMoving = false
   portId: string = ''
+  connections: NodePort[] = []
 
-  mounted() {
-    // this.portId = this.addPort(this)
+  async mounted() {
+    this.portId = await this.addPort(this)
     console.log('Port ID: ', this.portId)
   }
 
   onDragStart(event: DragEvent) {
-    console.log('drag start')
     this.isMoving = true
+    this.color = '#849eb1'
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move'
       event.dataTransfer.setData('text/plain', this.portId)
@@ -81,7 +86,6 @@ export default class NodePort extends Vue {
   }
 
   onDragEnd(event: DragEvent) {
-    console.log('drag end')
     if (this.isMoving) {
       this.reset()
     }
@@ -94,13 +98,16 @@ export default class NodePort extends Vue {
     this.position.y = position.y
   }
 
-  anchor() {
+  anchor(pos?: Point) {
+    const position = pos || this.position
+    this.color = '#f56c6c'
     this.isMoving = false
-    this.anchorPoint.x = this.position.x
-    this.anchorPoint.y = this.position.y
+    this.anchorPoint.x = position.x
+    this.anchorPoint.y = position.y
   }
 
   reset() {
+    this.color = '#409eff'
     this.anchorPoint.x = this.initialPosition.x
     this.anchorPoint.y = this.initialPosition.y
   }
@@ -111,15 +118,51 @@ export default class NodePort extends Vue {
     event.dataTransfer.dropEffect = 'move'
   }
 
-  onDrop(event: any) {
-    console.log('dropped')
+  async onDrop(event: any) {
+    event.preventDefault()
+    event.stopPropagation()
     event.dataTransfer.dropEffect = 'move'
     const portId = event.dataTransfer.getData('text/plain')
-    event.preventDefault()
-    // const droppedPort = this.getPort('portId')
-    // if (droppedPort) {
-    //   droppedPort.anchor()
-    // }
+    console.log(`onDrop [portId:${portId}]`)
+    const droppedPort = await this.getPort(portId)
+    const element = this.$el as HTMLElement
+    const x = element.offsetLeft
+    const y = element.offsetTop
+    if (droppedPort) {
+      droppedPort.connect(this)
+      this.connect(droppedPort)
+      this.$emit(ConnectionEvent.CONNECTED, [droppedPort, this])
+    }
+  }
+
+  connect(port: NodePort) {
+    this.color = '#f56c6c'
+    this.isMoving = false
+    this.connections.push(port)
+  }
+
+  disconnect(ports?: NodePort[]) {
+    this.isMoving = false
+    let connections = this.connections
+    if (ports) {
+      connections = []
+      const remainders: NodePort[] = []
+      this.connections.forEach((port) => {
+        if (ports.includes(port)) {
+          connections.push(port)
+        } else {
+          remainders.push(port)
+        }
+      })
+      this.connections = remainders
+    } else {
+      this.connections = []
+    }
+    connections.forEach((connection) => connection.disconnect([this]))
+
+    if (this.connections.length === 0) {
+      this.reset()
+    }
   }
 }
 </script>

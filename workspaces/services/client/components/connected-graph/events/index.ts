@@ -3,3 +3,8 @@ export enum PortEvent {
   MOVE = 'move',
   MOVE_END = 'moveEnd'
 }
+
+export enum ConnectionEvent {
+  CONNECTED = 'connected',
+  DISCONNECTED = 'disconnected'
+}
