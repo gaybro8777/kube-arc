@@ -2,12 +2,17 @@
   <page>
     <div slot="header">
       <div class="button-group--header">
-        <el-button type="primary" icon="el-icon-plus" size="medium">
-          Add
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          size="medium"
+          @click="addNode"
+        >
+          Add Node
         </el-button>
       </div>
     </div>
-    <connected-graph slot="content"></connected-graph>
+    <connected-graph ref="graph" slot="content"></connected-graph>
     <div slot="footer" class="progress-bar--footer">
       <el-progress :percentage="30" color="#409eff"></el-progress>
     </div>
@@ -74,13 +79,18 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import page from '~/components/page/default.vue'
-import connectedGraph from '~/components/connected-graph/index.vue'
+import ConnectedGraph from '~/components/connected-graph/index.vue'
 
 @Component({
   components: {
     page,
-    connectedGraph
+    ConnectedGraph
   }
 })
-export default class PipelinePage extends Vue {}
+export default class PipelinePage extends Vue {
+  addNode() {
+    const graph = this.$refs.graph as ConnectedGraph
+    graph.addNode()
+  }
+}
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div class="edge-line">
-    <svg>
+    <svg class="svg-canvas">
       <polyline
         :points="points"
         style="stroke:#409eff; stroke-width:4px; fill:none"
@@ -12,6 +12,16 @@
 <style lang="css">
 .edge-line {
   position: absolute;
+  user-select: none;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  left:0;
+  top:0;
+}
+.svg-canvas {
+  width:inherit;
+  height: inherit;
 }
 </style>
 
@@ -27,12 +37,18 @@ type Point = {
 @Component({})
 export default class Connection extends Vue {
   @Prop({ default: () => [], type: Array }) ports!: NodePort[]
+  @Prop({ default: () => ({ x: 0, y: 0 }), type: Object }) anchor!: Point
 
   get points(): string {
     if (this.ports.length > 1) {
       const { x: x1, y: y1 } = this.ports[0].position
       const { x: x2, y: y2 } = this.ports[1].position
+      console.log(`${x1} ${y1}, ${x2} ${y2}`)
       return `${x1} ${y1}, ${x2} ${y2}`
+    } else if (this.ports.length === 1) {
+      const { x: x1, y: y1 } = this.ports[0].position
+      const anchor = this.anchor
+      return `${anchor.x} ${anchor.y}, ${anchor.x + x1} ${anchor.y + y1}`
     }
     return `0 0, 0 0`
   }

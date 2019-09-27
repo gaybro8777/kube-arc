@@ -1,6 +1,11 @@
 <template>
-  <div class="port-container" @drop="onDrop" @dragover="onDragOver">
-    <div class="port fixed"></div>
+  <div
+    :id="portId"
+    class="port-container"
+    @drop="onDrop"
+    @dragover="onDragOver"
+  >
+    <!-- <div class="port fixed"></div> -->
     <div
       ref="port"
       class="port"
@@ -30,6 +35,7 @@
   position: absolute;
   cursor: pointer;
   z-index: 2;
+  transform: translate(5px, 5px);
 }
 .fixed {
   user-select: none;
@@ -39,7 +45,6 @@
 .receptor {
   width:20px;
   height:20px;
-  transform: translate(-5px, -5px);
   background: #d1d1d1;
   z-index: 0;
 }

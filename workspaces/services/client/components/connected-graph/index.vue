@@ -1,54 +1,74 @@
 <template>
   <div
     class="connected__stage"
-    @mouseup="stopMovingPort"
-    @mouseleave="stopMovingPort"
+    @mouseup="stopMovingDraggable"
+    @mouseleave="stopMovingDraggable"
     @drop="onStageDropHandler"
     @dragover="onStageDragoverHandler"
   >
     <!-- @mousemove="onMouseMove" -->
-    <graph-node
-      ref="node1"
+    <component
+      v-for="node in nodes"
+      :key="node.id"
+      :is="GraphNode"
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
       @connected="onConnect"
       @disconnected="onDisconnect"
-    >
-    </graph-node>
-    <graph-node
-      ref="node1"
-      @moveStart="onPortMoveStart"
-      @move="onPortMove"
-      @moveEnd="onPortMoveEnd"
-      @connected="onConnect"
-      @disconnected="onDisconnect"
-    >
-    </graph-node>
+    ></component>
     <port
-      class="dropZone"
+      class="dropZone1"
+      @moveStart="onPortMoveStart"
+      @move="onPortMove"
+      @moveEnd="onPortMoveEnd"
+      @connected="onConnect"
+      @disconnected="onDisconnect"
+    ></port>
+    <port
+      class="dropZone2"
+      @moveStart="onPortMoveStart"
+      @move="onPortMove"
+      @moveEnd="onPortMoveEnd"
+      @connected="onConnect"
+      @disconnected="onDisconnect"
+    ></port>
+    <port
+      class="dropZone3"
+      @moveStart="onPortMoveStart"
+      @move="onPortMove"
+      @moveEnd="onPortMoveEnd"
       @connected="onConnect"
       @disconnected="onDisconnect"
     ></port>
     <connection
+      v-if="isConnectionEnabled"
       class="connection"
+      :anchor="anchorPoint"
       :ports="ports"
-      :style="{
-        left: anchorPoint.x + 'px',
-        top: anchorPoint.y + 'px'
-      }"
     ></connection>
   </div>
 </template>
 
 <style lang="css">
-.dropZone {
+.dropZone1 {
+  position: absolute;
+  top: 50px;
+  left: 400px;
+}
+.dropZone2 {
   position: absolute;
   top: 100px;
   left: 400px;
 }
+.dropZone3 {
+  position: absolute;
+  top: 200px;
+  left: 400px;
+}
 .connected__stage {
   position: relative;
+  user-select: none;
   width:100%;
   height:100%;
 }
@@ -65,15 +85,14 @@ import { Action } from 'vuex-class'
 import { Point } from '../common/types/point'
 import GraphNode from './node.vue'
 import connection from './connection.vue'
-import port from './port.vue'
-import { ConnectionEvent } from './events'
 import NodePort from './port.vue'
+import { ConnectionEvent } from './events'
 
 @Component({
   components: {
     GraphNode,
     connection,
-    port
+    port: NodePort
   }
 })
 export default class Connected extends Vue {
@@ -82,9 +101,11 @@ export default class Connected extends Vue {
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
+  GraphNode = GraphNode
+  nodes: { id: number; x: number; y: number }[] = []
   isConnectionEnabled: boolean = true
   ports: NodePort[] = []
-  isPortMoving: boolean = false
+  isDraggableMoving: boolean = false
   anchorPoint: Point = { x: 0, y: 0 }
   currentPort: any
 
@@ -92,34 +113,71 @@ export default class Connected extends Vue {
     console.log(this)
   }
 
-  stopMovingPort(event: MouseEvent) {
-    this.isPortMoving = false
+  addNode() {
+    this.nodes.push({
+      id: this.nodes.length,
+      x: Math.round(Math.random() * 1000),
+      y: Math.round(Math.random() * 1000)
+    })
+  }
+
+  stopMovingDraggable(event: MouseEvent) {
+    this.isDraggableMoving = false
   }
   onPortMoveStart(event: any) {
-    this.isPortMoving = true
+    this.isDraggableMoving = true
     this.currentPort = event.port
+    this.ports = [this.currentPort]
     const element = this.currentPort.$el as HTMLElement
-    this.anchorPoint.x = element.offsetLeft
-    this.anchorPoint.y = element.offsetTop
+    const offset = this.findOffset(element, this.$el as HTMLElement)
+    const x = offset.x + 10
+    const y = offset.y + 10
+    this.anchorPoint.x = x
+    this.anchorPoint.y = y
+    this.currentPort.updatePosition({ x: 0, y: 0 })
+    this.isConnectionEnabled = true
   }
+
   onPortMoveEnd(event: any) {
-    this.isPortMoving = false
+    this.isDraggableMoving = false
+  }
+
+  findOffset(element: HTMLElement, parent: HTMLElement) {
+    let currentParent = element.parentElement
+    const offset = {
+      x: element.offsetLeft,
+      y: element.offsetTop
+    }
+    while (currentParent) {
+      if (currentParent === parent) {
+        break
+      }
+      offset.x += currentParent.offsetLeft
+      offset.y += currentParent.offsetTop
+      currentParent = currentParent.parentElement
+    }
+    return offset
   }
 
   onPortMove(event: MouseEvent) {
-    if (this.isPortMoving && this.currentPort) {
-      const x = event.offsetX
-      const y = event.offsetY
+    if (this.isDraggableMoving && this.currentPort) {
+      // const element = this.currentPort.$el as HTMLElement
+      // const offset = this.findOffset(element, this.$el as HTMLElement)
+      const x = event.offsetX - 5
+      const y = event.offsetY - 5
       this.currentPort.updatePosition({ x, y })
     }
   }
 
   async onStageDropHandler(event: any) {
     event.preventDefault()
+    this.anchorPoint.x = 0
+    this.anchorPoint.y = 0
+    this.ports = []
+    this.isConnectionEnabled = false
     const portId = event.dataTransfer.getData('text/plain')
     console.log(`onStageDropHandler [portId:${portId}]`)
     const droppedPort = await this.getPort(portId)
-
     if (droppedPort) {
       droppedPort.disconnect()
     }
@@ -131,7 +189,19 @@ export default class Connected extends Vue {
   }
 
   onConnect(ports: NodePort[]) {
-    console.log('onConnect-outter:', event)
+    const element1 = ports[0].$el as HTMLElement
+    const element2 = ports[1].$el as HTMLElement
+    const offset1 = this.findOffset(element1, this.$el as HTMLElement)
+    const offset2 = this.findOffset(element2, this.$el as HTMLElement)
+
+    offset1.x += 10
+    offset1.y += 10
+
+    offset2.x += 10
+    offset2.y += 10
+
+    ports[0].updatePosition(offset1)
+    ports[1].updatePosition(offset2)
     this.isConnectionEnabled = true
     this.ports = ports
   }
