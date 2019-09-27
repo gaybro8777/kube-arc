@@ -6,10 +6,10 @@
     @drop="onStageDropHandler"
     @dragover="onStageDragoverHandler"
   >
-    <!-- @mousemove="onMouseMove" -->
     <component
       v-for="node in nodes"
-      :key="node.id"
+      ref="nodes"
+      :key="'node_' + node.id"
       :is="GraphNode"
       @moveStart="onPortMoveStart"
       @move="onPortMove"
@@ -17,36 +17,16 @@
       @connected="onConnect"
       @disconnected="onDisconnect"
     ></component>
-    <port
-      class="dropZone1"
-      @moveStart="onPortMoveStart"
-      @move="onPortMove"
-      @moveEnd="onPortMoveEnd"
-      @connected="onConnect"
-      @disconnected="onDisconnect"
-    ></port>
-    <port
-      class="dropZone2"
-      @moveStart="onPortMoveStart"
-      @move="onPortMove"
-      @moveEnd="onPortMoveEnd"
-      @connected="onConnect"
-      @disconnected="onDisconnect"
-    ></port>
-    <port
-      class="dropZone3"
-      @moveStart="onPortMoveStart"
-      @move="onPortMove"
-      @moveEnd="onPortMoveEnd"
-      @connected="onConnect"
-      @disconnected="onDisconnect"
-    ></port>
-    <connection
-      v-if="isConnectionEnabled"
+    <component
+      v-for="connection in connections"
+      ref="connections"
       class="connection"
+      :key="'connection_' + connection.metadata.id"
+      :is="PortConnection"
+      :id="connection.metadata.id"
       :anchor="anchorPoint"
-      :ports="ports"
-    ></connection>
+      :ports="connection.ports"
+    ></component>
   </div>
 </template>
 
@@ -84,34 +64,29 @@ import { Action } from 'vuex-class'
 
 import { Point } from '../common/types/point'
 import GraphNode from './node.vue'
-import connection from './connection.vue'
+import PortConnection, { ConnectionInfo } from './connection.vue'
 import NodePort from './port.vue'
 import { ConnectionEvent } from './events'
 
 @Component({
   components: {
     GraphNode,
-    connection,
-    port: NodePort
+    PortConnection
   }
 })
-export default class Connected extends Vue {
+export default class ConnectedGraph extends Vue {
   @Action('graph/getPort') getPort!: (portId: string) => any
 
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
+  PortConnection = PortConnection
   GraphNode = GraphNode
   nodes: { id: number; x: number; y: number }[] = []
-  isConnectionEnabled: boolean = true
-  ports: NodePort[] = []
+  connections: ConnectionInfo[] = []
   isDraggableMoving: boolean = false
   anchorPoint: Point = { x: 0, y: 0 }
   currentPort: any
-
-  mounted() {
-    console.log(this)
-  }
 
   addNode() {
     this.nodes.push({
@@ -124,10 +99,19 @@ export default class Connected extends Vue {
   stopMovingDraggable(event: MouseEvent) {
     this.isDraggableMoving = false
   }
+
   onPortMoveStart(event: any) {
     this.isDraggableMoving = true
     this.currentPort = event.port
-    this.ports = [this.currentPort]
+    if (this.currentPort.connections.length === 0) {
+      const connectionInfo: ConnectionInfo = {
+        metadata: { id: this.connections.length },
+        ports: [this.currentPort],
+        component: null
+      }
+      this.currentPort.connectionId = connectionInfo.metadata.id
+      this.connections.push(connectionInfo)
+    }
     const element = this.currentPort.$el as HTMLElement
     const offset = this.findOffset(element, this.$el as HTMLElement)
     const x = offset.x + 10
@@ -135,7 +119,6 @@ export default class Connected extends Vue {
     this.anchorPoint.x = x
     this.anchorPoint.y = y
     this.currentPort.updatePosition({ x: 0, y: 0 })
-    this.isConnectionEnabled = true
   }
 
   onPortMoveEnd(event: any) {
@@ -161,8 +144,21 @@ export default class Connected extends Vue {
 
   onPortMove(event: MouseEvent) {
     if (this.isDraggableMoving && this.currentPort) {
-      // const element = this.currentPort.$el as HTMLElement
-      // const offset = this.findOffset(element, this.$el as HTMLElement)
+      if (this.currentPort.connections.length === 0) {
+        const connections = this.$refs.connections as PortConnection[]
+        if (connections) {
+          const connection = connections.find(
+            (c) => c.id === this.currentPort.connectionId
+          )
+          const connectionInfo = this.connections.find(
+            (c) => c.metadata.id === this.currentPort.connectionId
+          )
+          if (connectionInfo && connection) {
+            connectionInfo.component = connection
+            this.currentPort.connections.push(connectionInfo)
+          }
+        }
+      }
       const x = event.offsetX - 5
       const y = event.offsetY - 5
       this.currentPort.updatePosition({ x, y })
@@ -173,10 +169,7 @@ export default class Connected extends Vue {
     event.preventDefault()
     this.anchorPoint.x = 0
     this.anchorPoint.y = 0
-    this.ports = []
-    this.isConnectionEnabled = false
     const portId = event.dataTransfer.getData('text/plain')
-    console.log(`onStageDropHandler [portId:${portId}]`)
     const droppedPort = await this.getPort(portId)
     if (droppedPort) {
       droppedPort.disconnect()
@@ -202,8 +195,6 @@ export default class Connected extends Vue {
 
     ports[0].updatePosition(offset1)
     ports[1].updatePosition(offset2)
-    this.isConnectionEnabled = true
-    this.ports = ports
   }
 
   onDisconnect(event: any) {

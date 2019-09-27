@@ -27,15 +27,20 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
+import { Point } from '../common/types/point'
 import NodePort from './port.vue'
 
-type Point = {
-  x: number
-  y: number
+export type ConnectionInfo = {
+  component: PortConnection | null
+  ports: NodePort[]
+  metadata: {
+    id: number
+  }
 }
 
 @Component({})
-export default class Connection extends Vue {
+export default class PortConnection extends Vue {
+  @Prop({ default: () => -1, type: Number }) id!: number
   @Prop({ default: () => [], type: Array }) ports!: NodePort[]
   @Prop({ default: () => ({ x: 0, y: 0 }), type: Object }) anchor!: Point
 
@@ -43,7 +48,6 @@ export default class Connection extends Vue {
     if (this.ports.length > 1) {
       const { x: x1, y: y1 } = this.ports[0].position
       const { x: x2, y: y2 } = this.ports[1].position
-      console.log(`${x1} ${y1}, ${x2} ${y2}`)
       return `${x1} ${y1}, ${x2} ${y2}`
     } else if (this.ports.length === 1) {
       const { x: x1, y: y1 } = this.ports[0].position

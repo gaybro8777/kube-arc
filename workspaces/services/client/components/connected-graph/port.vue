@@ -53,9 +53,9 @@
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator'
 import { Action } from 'vuex-class'
-// eslint-disable-next-line
 import { Point } from '../common/types/point'
 import { PortEvent, ConnectionEvent } from './events'
+import PortConnection, { ConnectionInfo } from './connection.vue'
 
 @Component({})
 export default class NodePort extends Vue {
@@ -69,7 +69,9 @@ export default class NodePort extends Vue {
   anchorPoint = { ...this.initialPosition }
   isMoving = false
   portId: string = ''
-  connections: NodePort[] = []
+  connectionId: string = ''
+  connections: ConnectionInfo[] = []
+  connectedPorts: NodePort[] = []
 
   async mounted() {
     this.portId = await this.addPort(this)
@@ -128,7 +130,6 @@ export default class NodePort extends Vue {
     event.stopPropagation()
     event.dataTransfer.dropEffect = 'move'
     const portId = event.dataTransfer.getData('text/plain')
-    console.log(`onDrop [portId:${portId}]`)
     const droppedPort = await this.getPort(portId)
     const element = this.$el as HTMLElement
     const x = element.offsetLeft
@@ -136,6 +137,11 @@ export default class NodePort extends Vue {
     if (droppedPort) {
       droppedPort.connect(this)
       this.connect(droppedPort)
+      const connection = droppedPort.connections[0] || this.connections[0]
+      if (connection) {
+        console.log(connection)
+        // connection.ports = [this, droppedPort]
+      }
       this.$emit(ConnectionEvent.CONNECTED, [droppedPort, this])
     }
   }
@@ -143,29 +149,30 @@ export default class NodePort extends Vue {
   connect(port: NodePort) {
     this.color = '#f56c6c'
     this.isMoving = false
-    this.connections.push(port)
+    this.connectedPorts.push(port)
   }
 
   disconnect(ports?: NodePort[]) {
     this.isMoving = false
-    let connections = this.connections
+    let connectedPorts = this.connectedPorts
     if (ports) {
-      connections = []
+      connectedPorts = []
       const remainders: NodePort[] = []
-      this.connections.forEach((port) => {
+      this.connectedPorts.forEach((port) => {
         if (ports.includes(port)) {
-          connections.push(port)
+          connectedPorts.push(port)
         } else {
           remainders.push(port)
         }
       })
-      this.connections = remainders
+      this.connectedPorts = remainders
     } else {
-      this.connections = []
+      this.connectedPorts = []
     }
-    connections.forEach((connection) => connection.disconnect([this]))
+    connectedPorts.forEach((connection) => connection.disconnect([this]))
 
-    if (this.connections.length === 0) {
+    if (this.connectedPorts.length === 0) {
+      this.connections[0].ports = []
       this.reset()
     }
   }
