@@ -2,7 +2,9 @@
   <div class="edge-line">
     <svg class="svg-canvas">
       <polyline
-        :points="points"
+        v-for="connectionInfo in connections"
+        :key="connectionInfo.metadata.id"
+        :points="connectionInfo.connection.points"
         style="stroke:#409eff; stroke-width:4px; fill:none"
       />
     </svg>
@@ -31,18 +33,27 @@ import { Point } from '../common/types/point'
 import NodePort from './port.vue'
 
 export type ConnectionInfo = {
-  component: PortConnection | null
-  ports: NodePort[]
+  connection: PortConnection | null
   metadata: {
     id: number
   }
 }
 
 @Component({})
-export default class PortConnection extends Vue {
-  @Prop({ default: () => -1, type: Number }) id!: number
-  @Prop({ default: () => [], type: Array }) ports!: NodePort[]
-  @Prop({ default: () => ({ x: 0, y: 0 }), type: Object }) anchor!: Point
+export default class PortConnections extends Vue {
+  @Prop({ default: () => [], type: Array }) connections!: ConnectionInfo[]
+  getConnection(id: number): ConnectionInfo | undefined {
+    return this.connections.find((c) => c.metadata.id === id)
+  }
+}
+
+export class PortConnection {
+  /* eslint-disable no-useless-constructor */
+  constructor(
+    public id: number = (Math.random() * 1000) | 0,
+    public ports: NodePort[] = [],
+    public anchor: Point = { x: 0, y: 0 }
+  ) {}
 
   get points(): string {
     if (this.ports.length > 1) {

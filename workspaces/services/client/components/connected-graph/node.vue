@@ -44,10 +44,12 @@
 <style lang="css">
 .connected__node {
   position: absolute;
+  cursor: move;
   width: 200px;
   border: 1px solid #c1cdda;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
-  cursor: move;
+  background: white;
+  z-index: 1;
 }
 .connected__node:hover{
   border: 1px solid #409eff;
