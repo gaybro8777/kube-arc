@@ -8,15 +8,17 @@
   >
     <!-- Nodes -->
     <component
-      v-for="node in nodes"
-      ref="nodes"
-      :key="'node_' + node.id"
       :is="GraphNode"
+      v-for="node in nodes"
+      :id="node.id"
+      :key="'node_' + node.id"
+      ref="nodes"
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
       @connected="onConnect"
       @disconnected="onDisconnect"
+      @delete="onDeleteNode"
     ></component>
     <!-- Port Connections -->
     <port-connections
@@ -56,14 +58,13 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { Action } from 'vuex-class'
+import { Action, Getter } from 'vuex-class'
 
 import { Point } from '../common/types/point'
+import { randomId } from '../common/utils'
 import GraphNode from './node.vue'
-import PortConnections, {
-  ConnectionInfo,
-  PortConnection
-} from './connections.vue'
+import PortConnections from './connections.vue'
+import { PortConnection } from './connection'
 import NodePort from './port.vue'
 import { ConnectionEvent } from './events'
 
@@ -75,13 +76,23 @@ import { ConnectionEvent } from './events'
 })
 export default class ConnectedGraph extends Vue {
   @Action('graph/getPort') getPort!: (portId: string) => any
+  // @Action('graph/getConnection') getConnection!: (connectionId: string) => any
+  // @Action('graph/addConnection') addConnection!: (
+  //   connection: PortConnection
+  // ) => any
+  // @Action('graph/removeConnection') removeConnection!: (
+  //   connectionId: string
+  // ) => any
+  // @Getter('graph/connections') connections!: Map<string, PortConnection>
 
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
+  // Connections
+  connections: PortConnection[] = []
+
   GraphNode = GraphNode
   nodes: { id: number; x: number; y: number }[] = []
-  connections: ConnectionInfo[] = []
   isDraggableMoving: boolean = false
   currentPort!: NodePort
   offset = { x: 0, y: 0 }
@@ -92,6 +103,19 @@ export default class ConnectedGraph extends Vue {
       x: Math.round(Math.random() * 1000),
       y: Math.round(Math.random() * 1000)
     })
+  }
+
+  addConnection(connection: PortConnection) {
+    // this.connections.set(connection.id, connection)
+    this.connections.push(connection)
+  }
+
+  removeConnection(connection: PortConnection) {
+    // this.connections.delete(connection.id)
+    const index = this.connections.indexOf(connection)
+    if (index > -1) {
+      this.connections.splice(index, 1)
+    }
   }
 
   stopMovingDraggable(event: MouseEvent) {
@@ -108,22 +132,23 @@ export default class ConnectedGraph extends Vue {
       const x = offset.x + 10
       const y = offset.y + 10
       const anchorPoint = { x, y }
-      const id = this.connections.length
-      const connectionInfo: ConnectionInfo = {
-        metadata: { id },
-        connection: new PortConnection(id, [this.currentPort], anchorPoint)
-      }
-      this.connections.push(connectionInfo)
-      this.currentPort.connection = connectionInfo
+      const connection: PortConnection = new PortConnection(
+        randomId(),
+        [this.currentPort],
+        anchorPoint
+      )
+      this.currentPort.connection = connection
       this.offset.x = 0
       this.offset.y = 0
+      this.addConnection(connection)
     } else {
-      console.log('Already connected')
-      const connectionInfo = this.currentPort.connection
+      const connection = this.currentPort.connection
       const otherPort = this.currentPort.connectedPort
-      if (otherPort && connectionInfo && connectionInfo.connection) {
-        connectionInfo.connection.anchor = otherPort.position
-        connectionInfo.connection.ports = [this.currentPort]
+      // this.currentPort.connectedPort = null
+      // this.currentPort.reset()
+      if (otherPort && connection) {
+        connection.anchor = otherPort.position
+        connection.ports = [this.currentPort]
         const pos1 = this.currentPort.position
         const pos2 = otherPort.position
         this.offset.x = pos2.x - pos1.x
@@ -166,23 +191,17 @@ export default class ConnectedGraph extends Vue {
     event.preventDefault()
     const portId = event.dataTransfer.getData('text/plain')
     const droppedPort = await this.getPort(portId)
-    console.log(droppedPort.connection.metadata.id)
 
     if (droppedPort) {
-      const connectionInfo = this.connections.find(
-        (c) => c.metadata.id === droppedPort.connection.metadata.id
-      )
-      if (connectionInfo) {
-        const index = this.connections.indexOf(connectionInfo)
-        this.connections.splice(index, 1)
-      }
+      console.log('connection:', droppedPort.connection.id)
+      this.removeConnection(droppedPort.connection)
       droppedPort.disconnect()
     }
   }
 
   onStageDragoverHandler(event: any) {
     event.preventDefault()
-    // event.dataTransfer.dropEffect = 'move'
+    event.dataTransfer.dropEffect = 'move'
   }
 
   onConnect(ports: NodePort[]) {
@@ -201,8 +220,35 @@ export default class ConnectedGraph extends Vue {
     ports[1].updatePosition(offset2)
   }
 
-  onDisconnect(event: any) {
-    console.log(event)
+  onDisconnect(ports: NodePort[]) {
+    ports.forEach((port) => {
+      if (port.connection) {
+        this.removeConnection(port.connection)
+      }
+      port.disconnect()
+    })
+  }
+
+  onDeleteNode(node: GraphNode) {
+    const ports: NodePort[] = node.$refs.ports as NodePort[]
+    const connectionsToDelete = new Set<PortConnection>()
+    ports.forEach((port) => {
+      if (port.connection) {
+        connectionsToDelete.add(port.connection)
+      }
+      port.disconnect()
+    })
+
+    for (const c of connectionsToDelete) {
+      const index = this.connections.indexOf(c)
+      this.connections.splice(index, 1)
+    }
+
+    const found = this.nodes.find((n) => n.id === node.id)
+    if (found) {
+      const index = this.nodes.indexOf(found)
+      this.nodes.splice(index, 1)
+    }
   }
 }
 </script>

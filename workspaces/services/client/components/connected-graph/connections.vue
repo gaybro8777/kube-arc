@@ -1,10 +1,10 @@
 <template>
   <div class="edge-line">
-    <svg class="svg-canvas">
+    <svg v-if="connections" class="svg-canvas">
       <polyline
-        v-for="connectionInfo in connections"
-        :key="connectionInfo.metadata.id"
-        :points="connectionInfo.connection.points"
+        v-for="connection in connections"
+        :key="connection.id"
+        :points="connection.points"
         style="stroke:#409eff; stroke-width:4px; fill:none"
       />
     </svg>
@@ -29,43 +29,20 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { Point } from '../common/types/point'
-import NodePort from './port.vue'
+import { Getter } from 'vuex-class'
 
-export type ConnectionInfo = {
-  connection: PortConnection | null
-  metadata: {
-    id: number
-  }
-}
+import { Point } from '../common/types/point'
+import { randomId } from '../common/utils'
+import NodePort from './port.vue'
+import { PortConnection } from './connection'
 
 @Component({})
 export default class PortConnections extends Vue {
-  @Prop({ default: () => [], type: Array }) connections!: ConnectionInfo[]
-  getConnection(id: number): ConnectionInfo | undefined {
-    return this.connections.find((c) => c.metadata.id === id)
-  }
-}
+  @Prop({ default: () => null, type: Array }) connections!: PortConnection[]
 
-export class PortConnection {
-  /* eslint-disable no-useless-constructor */
-  constructor(
-    public id: number = (Math.random() * 1000) | 0,
-    public ports: NodePort[] = [],
-    public anchor: Point = { x: 0, y: 0 }
-  ) {}
-
-  get points(): string {
-    if (this.ports.length > 1) {
-      const { x: x1, y: y1 } = this.ports[0].position
-      const { x: x2, y: y2 } = this.ports[1].position
-      return `${x1} ${y1}, ${x2} ${y2}`
-    } else if (this.ports.length === 1) {
-      const { x: x1, y: y1 } = this.ports[0].position
-      const anchor = this.anchor
-      return `${anchor.x} ${anchor.y}, ${anchor.x + x1} ${anchor.y + y1}`
-    }
-    return `0 0, 0 0`
+  get _connections() {
+    console.log(this.connections.length)
+    return this.connections.length
   }
 }
 </script>

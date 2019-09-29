@@ -55,7 +55,7 @@ import { Vue, Component } from 'vue-property-decorator'
 import { Action } from 'vuex-class'
 import { Point } from '../common/types/point'
 import { PortEvent, ConnectionEvent } from './events'
-import PortConnection, { ConnectionInfo } from './connections.vue'
+import { PortConnection } from './connection'
 
 @Component({})
 export default class NodePort extends Vue {
@@ -69,7 +69,7 @@ export default class NodePort extends Vue {
   anchorPoint = { ...this.initialPosition }
   isMoving = false
   portId: string = ''
-  connection: ConnectionInfo | null = null
+  connection: PortConnection | null = null
   connectedPort: NodePort | null = null
 
   async mounted() {
@@ -80,11 +80,14 @@ export default class NodePort extends Vue {
   onDragStart(event: DragEvent) {
     this.isMoving = true
     this.color = '#849eb1'
+    const port: NodePort = this
+    const portId = this.portId
+
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move'
-      event.dataTransfer.setData('text/plain', this.portId)
+      event.dataTransfer.setData('text/plain', portId)
     }
-    this.$emit(PortEvent.MOVE_START, { port: this })
+    this.$emit(PortEvent.MOVE_START, { port })
   }
 
   onDrag(event: DragEvent) {
@@ -133,44 +136,60 @@ export default class NodePort extends Vue {
     const element = this.$el as HTMLElement
     const x = element.offsetLeft
     const y = element.offsetTop
-    if (droppedPort === this) {
-      droppedPort = droppedPort.connectedPort
+
+    if (this.connectedPort && this !== droppedPort) {
+      console.warn(`Port ${droppedPort.portId} not accepted`)
+      this.$emit(ConnectionEvent.DISCONNECTED, [droppedPort])
+      return
     }
+
+    if (droppedPort.connectedPort) {
+      const connectedPort = droppedPort.connectedPort
+      droppedPort.connectedPort = null
+      droppedPort.disconnect()
+      droppedPort = connectedPort
+    }
+
+    if (droppedPort === this) {
+      this.$emit(ConnectionEvent.DISCONNECTED, [this])
+      return
+    }
+
     if (droppedPort) {
       droppedPort.connect(this)
       this.connect(droppedPort)
-      const connectionInfo: ConnectionInfo =
+
+      const connection: PortConnection =
         droppedPort.connection || this.connection
-      if (connectionInfo && connectionInfo.connection) {
-        connectionInfo.connection.ports = [this, droppedPort]
+
+      if (connection) {
+        connection.ports = [this, droppedPort]
       }
-      this.connection = connectionInfo
-      droppedPort.connection = connectionInfo
+
+      this.connection = connection
+      droppedPort.connection = connection
       this.$emit(ConnectionEvent.CONNECTED, [this, droppedPort])
     }
   }
 
   connect(port: NodePort) {
+    console.log(`Ports [${this.portId}, ${port.portId}] connected`)
     if (this.connection === null && port === this) return
     this.color = '#f56c6c'
     this.isMoving = false
-    if (this.connection) {
-      if (this.connection.connection && this.connectedPort) {
-        console.log(
-          'this.connection.connection.ports:',
-          this.connection.connection.ports
-        )
-        this.connection.connection.ports = [this, this.connectedPort]
-      }
-    } else {
-      this.connectedPort = port
-    }
+    this.connectedPort = port
   }
 
   disconnect(ports?: NodePort[]) {
+    console.log(`Port ${this.portId} disconnected`)
+
     this.isMoving = false
     this.connection = null
+    const connectedPort = this.connectedPort
     this.connectedPort = null
+    if (connectedPort) {
+      connectedPort.disconnect()
+    }
     this.reset()
   }
 }

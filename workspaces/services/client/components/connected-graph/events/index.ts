@@ -8,3 +8,7 @@ export enum ConnectionEvent {
   CONNECTED = 'connected',
   DISCONNECTED = 'disconnected'
 }
+
+export enum NodeEvent {
+  DELETE = 'delete'
+}

@@ -2,10 +2,10 @@
   <div ref="node" class="connected__node" @mousedown="onMouseDown">
     <div class="ports--left">
       <component
+        :is="NodePort"
         v-for="port in leftPorts"
         :key="port.id"
         ref="ports"
-        :is="NodePort"
         @move="onMove"
         @moveEnd="onMoveEnd"
         @moveStart="onMoveStart"
@@ -15,9 +15,9 @@
     </div>
     <div class="ports--right">
       <component
+        :is="NodePort"
         v-for="port in rightPorts"
         :key="port.portId"
-        :is="NodePort"
         ref="ports"
         @move="onMove"
         @moveEnd="onMoveEnd"
@@ -34,6 +34,7 @@
         type="text"
         icon="el-icon-delete"
         style="float: right; padding: 3px 0; color: red;"
+        @click="onDelete"
       >
       </el-button>
       <div>x:{{ port.position.x }}, y:{{ port.position.y }}</div>
@@ -76,7 +77,7 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import NodePort from './port.vue'
-import { PortEvent, ConnectionEvent } from './events'
+import { PortEvent, ConnectionEvent, NodeEvent } from './events'
 
 @Component({
   components: {
@@ -84,6 +85,7 @@ import { PortEvent, ConnectionEvent } from './events'
   }
 })
 export default class GraphNode extends Vue {
+  @Prop({ default: () => -1 }) id!: number
   @Prop({ default: () => 'Node' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
@@ -152,6 +154,10 @@ export default class GraphNode extends Vue {
     this.isDragging = false
     document.removeEventListener('mouseup', this.onMouseUp)
     document.removeEventListener('mousemove', this.onMouseMove)
+  }
+
+  onDelete() {
+    this.$emit(NodeEvent.DELETE, this)
   }
 }
 </script>
