@@ -26,19 +26,31 @@
         @disconnected="onDisconnect"
       ></component>
     </div>
-    <div ref="content" class="content">
-      <component :is="icon" v-if="icon" class="box-card__icon"></component>
-      <span>{{ name }}</span>
-      <el-button
-        size="mini"
-        type="text"
-        icon="el-icon-delete"
-        style="float: right; padding: 3px 0; color: red;"
-        @click="onDelete"
-      >
-      </el-button>
-      <div>x:{{ port.position.x }}, y:{{ port.position.y }}</div>
+    <div ref="header" class="header">
+      <node-status></node-status>
+      <div>{{ name }}</div>
+      <div class="action-group">
+        <el-button
+          class="tiny-btn"
+          style="margin-left:0;"
+          size="small"
+          type="primary"
+          icon="el-icon-edit"
+          @click="onDelete"
+        >
+        </el-button>
+        <el-button
+          class="tiny-btn"
+          style="margin-left:0;"
+          size="small"
+          type="primary"
+          icon="el-icon-delete"
+          @click="onDelete"
+        >
+        </el-button>
+      </div>
     </div>
+    <div ref="content" class="content"></div>
   </div>
 </template>
 
@@ -47,6 +59,7 @@
   position: absolute;
   cursor: move;
   width: 200px;
+  height: 90px;
   border: 1px solid #c1cdda;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
   background: white;
@@ -55,8 +68,25 @@
 .connected__node:hover{
   border: 1px solid #409eff;
 }
+.node__icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+.header {
+  padding: 10px;
+  display: flex;
+}
 .content {
-  padding: 20px;
+  padding: 10px;
+}
+.action-group {
+  right: 10px;
+  position: absolute;
+}
+.tiny-btn {
+  padding: 3px;
+  margin-left:0;
 }
 .ports--left {
   left: -20px;
@@ -86,12 +116,12 @@ import { PortEvent, ConnectionEvent, NodeEvent } from './events'
 })
 export default class GraphNode extends Vue {
   @Prop({ default: () => -1 }) id!: number
-  @Prop({ default: () => 'Node' }) name!: string
+  @Prop({ default: () => 'Service' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
   NodePort = NodePort
-  leftPorts = [{ id: 0 }]
-  rightPorts = [{ id: 1 }]
+  leftPorts = [{ id: 0 }, { id: 1 }]
+  rightPorts = [{ id: 2 }, { id: 3 }]
 
   port = { position: { x: 0, y: 0 } }
   offset = { x: 0, y: 0 }

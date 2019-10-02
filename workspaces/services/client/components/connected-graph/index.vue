@@ -13,6 +13,7 @@
       :id="node.id"
       :key="'node_' + node.id"
       ref="nodes"
+      :icon="serviceIcon"
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
@@ -59,7 +60,6 @@
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
 import { Action, Getter } from 'vuex-class'
-
 import { Point } from '../common/types/point'
 import { randomId } from '../common/utils'
 import GraphNode from './node.vue'
@@ -67,11 +67,13 @@ import PortConnections from './connections.vue'
 import { PortConnection } from './connection'
 import NodePort from './port.vue'
 import { ConnectionEvent } from './events'
+import serviceIcon from '~/assets/icons/service.svg'
 
 @Component({
   components: {
     GraphNode,
-    PortConnections
+    PortConnections,
+    serviceIcon
   }
 })
 export default class ConnectedGraph extends Vue {
@@ -91,7 +93,10 @@ export default class ConnectedGraph extends Vue {
   // Connections
   connections: PortConnection[] = []
 
+  // Components
   GraphNode = GraphNode
+  serviceIcon = serviceIcon
+
   nodes: { id: number; x: number; y: number }[] = []
   isDraggableMoving: boolean = false
   currentPort!: NodePort

@@ -26,7 +26,8 @@
 
 <style lang="css">
 .port-container {
-  position: absolute
+  position: relative;
+  padding-bottom: 5px;
 }
 .port {
   width: 10px;
