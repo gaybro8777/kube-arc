@@ -5,8 +5,8 @@
         :is="NodePort"
         v-for="port in ports"
         :key="port.serial"
-        :style="portStyle(port)"
         ref="ports"
+        :style="portStyle(port)"
         @move="onMove"
         @moveEnd="onMoveEnd"
         @moveStart="onMoveStart"
@@ -39,7 +39,18 @@
         </div>
       </div>
       <div ref="content" class="content">
-        <div>{{ name }}</div>
+        <el-select v-model="data.type" placeholder="Type" style="width: 177px;">
+          <el-option label="Service" value="service"></el-option>
+          <el-option label="VirtualService" value="virtual-service"></el-option>
+          <el-option
+            label="DestinationRule"
+            value="destination-rule"
+          ></el-option>
+          <el-option label="Gateway" value="gateway"></el-option>
+          <el-option label="DockerImage" value="docker-image"></el-option>
+          <el-option label="Deployment" value="deployment"></el-option>
+          <el-option label="Domain" value="domain"></el-option>
+        </el-select>
       </div>
     </div>
   </div>
@@ -136,6 +147,10 @@ export default class GraphNode extends Vue {
   @Prop({ default: () => null }) icon!: Vue
 
   NodePort = NodePort
+
+  data = {
+    type: 'service'
+  }
 
   ports: PortDescriptor[] = [
     {
