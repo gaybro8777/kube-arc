@@ -1,10 +1,11 @@
 <template>
-  <div ref="node" class="connected__node" @mousedown="onMouseDown">
-    <div class="ports--left">
+  <div ref="node" class="connected__node">
+    <div class="port-area">
       <component
         :is="NodePort"
-        v-for="port in leftPorts"
-        :key="port.id"
+        v-for="port in ports"
+        :key="port.serial"
+        :style="portStyle(port)"
         ref="ports"
         @move="onMove"
         @moveEnd="onMoveEnd"
@@ -13,44 +14,34 @@
         @disconnected="onDisconnect"
       ></component>
     </div>
-    <div class="ports--right">
-      <component
-        :is="NodePort"
-        v-for="port in rightPorts"
-        :key="port.portId"
-        ref="ports"
-        @move="onMove"
-        @moveEnd="onMoveEnd"
-        @moveStart="onMoveStart"
-        @connected="onConnect"
-        @disconnected="onDisconnect"
-      ></component>
-    </div>
-    <div ref="header" class="header">
-      <node-status></node-status>
-      <div>{{ name }}</div>
-      <div class="action-group">
-        <el-button
-          class="tiny-btn"
-          style="margin-left:0;"
-          size="small"
-          type="primary"
-          icon="el-icon-edit"
-          @click="onDelete"
-        >
-        </el-button>
-        <el-button
-          class="tiny-btn"
-          style="margin-left:0;"
-          size="small"
-          type="primary"
-          icon="el-icon-delete"
-          @click="onDelete"
-        >
-        </el-button>
+    <div class="node-area" @mousedown="onMouseDown">
+      <div ref="header" class="header">
+        <node-status></node-status>
+        <div class="action-group">
+          <el-button
+            class="tiny-btn"
+            style="margin-left:0;"
+            size="small"
+            type="primary"
+            icon="el-icon-edit"
+            @click="onEdit"
+          >
+          </el-button>
+          <el-button
+            class="tiny-btn"
+            style="margin-left:0;"
+            size="small"
+            type="primary"
+            icon="el-icon-delete"
+            @click="onDelete"
+          >
+          </el-button>
+        </div>
+      </div>
+      <div ref="content" class="content">
+        <div>{{ name }}</div>
       </div>
     </div>
-    <div ref="content" class="content"></div>
   </div>
 </template>
 
@@ -88,15 +79,31 @@
   padding: 3px;
   margin-left:0;
 }
-.ports--left {
+.node-area{
+  position: absolute;
+  background: white;
+  left:0;
+  top:0;
+  width: 100%;
+  height: 100%;
+}
+.port-area{
+  position: absolute;
+  /* border: 1px solid #ff00fd; */
   left: -20px;
+  top: -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 40px);
+}
+.ports--left {
+  left: 0;
   top: calc(100% / 2 - 10px);
   position: absolute;
   user-select: none;
   z-index: 2;
 }
 .ports--right {
-  left: calc(100%);
+  left: calc(100% - 20px);
   top: calc(100% / 2 - 10px);
   position: absolute;
   user-select: none;
@@ -106,26 +113,59 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
+import { randomId } from '../common/utils'
 import NodePort from './port.vue'
+import NodeStatus from './node-status.vue'
 import { PortEvent, ConnectionEvent, NodeEvent } from './events'
+
+type PortDescriptor = {
+  serial: number
+  position: { x: number | string; y: number | string }
+  config: any
+}
 
 @Component({
   components: {
-    NodePort
+    NodePort,
+    NodeStatus
   }
 })
 export default class GraphNode extends Vue {
-  @Prop({ default: () => -1 }) id!: number
+  @Prop({ default: () => randomId() }) id!: string
   @Prop({ default: () => 'Service' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
   NodePort = NodePort
-  leftPorts = [{ id: 0 }, { id: 1 }]
-  rightPorts = [{ id: 2 }, { id: 3 }]
+
+  ports: PortDescriptor[] = [
+    {
+      serial: 0,
+      position: { x: '100% - 20px', y: '100%/2 - 10px' },
+      config: {}
+    },
+    { serial: 1, position: { x: 0, y: '100%/2 - 10px' }, config: {} }
+  ]
 
   port = { position: { x: 0, y: 0 } }
   offset = { x: 0, y: 0 }
   isDragging = false
+
+  portStyle(port: PortDescriptor) {
+    const { x, y } = port.position
+    let left = x
+    if (typeof x === 'string') {
+      left = `calc(${x})`
+    }
+
+    let top = y
+    if (typeof y === 'string') {
+      top = `calc(${y})`
+    }
+    return {
+      left,
+      top
+    }
+  }
 
   onMoveStart(event: any) {
     this.port = event.port
@@ -161,15 +201,11 @@ export default class GraphNode extends Vue {
     el.style.top = top + 'px'
     el.style.left = left + 'px'
     const [port0, port1]: NodePort[] = this.$refs.ports as NodePort[]
-    port0.updatePosition({ x: left - 10, y: top + halfHeight })
-    port1.updatePosition({ x: left + width + 10, y: top + halfHeight })
+    port0.updatePosition({ x: left + width + 10, y: top + halfHeight })
+    port1.updatePosition({ x: left - 10, y: top + halfHeight })
   }
 
   onMouseDown(event: MouseEvent) {
-    const target = event.target
-    if (target !== this.$refs.node && target !== this.$refs.content) {
-      return
-    }
     event.preventDefault()
     document.addEventListener('mouseup', this.onMouseUp)
     document.addEventListener('mousemove', this.onMouseMove)
@@ -188,6 +224,10 @@ export default class GraphNode extends Vue {
 
   onDelete() {
     this.$emit(NodeEvent.DELETE, this)
+  }
+
+  onEdit() {
+    this.$emit(NodeEvent.EDIT, this)
   }
 }
 </script>

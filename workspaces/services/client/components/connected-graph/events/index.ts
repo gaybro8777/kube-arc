@@ -10,5 +10,6 @@ export enum ConnectionEvent {
 }
 
 export enum NodeEvent {
-  DELETE = 'delete'
+  DELETE = 'delete',
+  EDIT = 'edit'
 }

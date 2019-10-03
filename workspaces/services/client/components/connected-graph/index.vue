@@ -78,14 +78,6 @@ import serviceIcon from '~/assets/icons/service.svg'
 })
 export default class ConnectedGraph extends Vue {
   @Action('graph/getPort') getPort!: (portId: string) => any
-  // @Action('graph/getConnection') getConnection!: (connectionId: string) => any
-  // @Action('graph/addConnection') addConnection!: (
-  //   connection: PortConnection
-  // ) => any
-  // @Action('graph/removeConnection') removeConnection!: (
-  //   connectionId: string
-  // ) => any
-  // @Getter('graph/connections') connections!: Map<string, PortConnection>
 
   @Prop({ default: () => 'Untitled' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
@@ -97,26 +89,24 @@ export default class ConnectedGraph extends Vue {
   GraphNode = GraphNode
   serviceIcon = serviceIcon
 
-  nodes: { id: number; x: number; y: number }[] = []
+  nodes: { id: string; x: number; y: number }[] = []
   isDraggableMoving: boolean = false
   currentPort!: NodePort
   offset = { x: 0, y: 0 }
 
   addNode() {
     this.nodes.push({
-      id: this.nodes.length,
+      id: randomId(),
       x: Math.round(Math.random() * 1000),
       y: Math.round(Math.random() * 1000)
     })
   }
 
   addConnection(connection: PortConnection) {
-    // this.connections.set(connection.id, connection)
     this.connections.push(connection)
   }
 
   removeConnection(connection: PortConnection) {
-    // this.connections.delete(connection.id)
     const index = this.connections.indexOf(connection)
     if (index > -1) {
       this.connections.splice(index, 1)

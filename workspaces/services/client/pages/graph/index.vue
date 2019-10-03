@@ -10,6 +10,14 @@
         >
           Add Node
         </el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-upload2"
+          size="medium"
+          @click="onCommit"
+        >
+          Commit
+        </el-button>
       </div>
     </div>
     <connected-graph ref="graph" slot="content"></connected-graph>
@@ -91,6 +99,9 @@ export default class PipelinePage extends Vue {
   addNode() {
     const graph = this.$refs.graph as ConnectedGraph
     graph.addNode()
+  }
+  onCommit() {
+    console.log('Commiting...')
   }
 }
 </script>
