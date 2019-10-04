@@ -64,7 +64,7 @@ import { Point } from '../common/types/point'
 import { randomId } from '../common/utils'
 import GraphNode from './node.vue'
 import PortConnections from './connections.vue'
-import { PortConnection } from './connection'
+import { PortConnection, findOffset } from './connection'
 import NodePort from './port.vue'
 import { ConnectionEvent } from './events'
 import serviceIcon from '~/assets/icons/service.svg'
@@ -123,7 +123,7 @@ export default class ConnectedGraph extends Vue {
 
     if (this.currentPort.connection === null) {
       const element = this.currentPort.$el as HTMLElement
-      const offset = this.findOffset(element, this.$el as HTMLElement)
+      const offset = findOffset(element, this.$el as HTMLElement)
       const x = offset.x + 10
       const y = offset.y + 10
       const anchorPoint = { x, y }
@@ -139,8 +139,6 @@ export default class ConnectedGraph extends Vue {
     } else {
       const connection = this.currentPort.connection
       const otherPort = this.currentPort.connectedPort
-      // this.currentPort.connectedPort = null
-      // this.currentPort.reset()
       if (otherPort && connection) {
         connection.anchor = otherPort.position
         connection.ports = [this.currentPort]
@@ -150,36 +148,19 @@ export default class ConnectedGraph extends Vue {
         this.offset.y = pos2.y - pos1.y
       }
     }
-    this.currentPort.updatePosition({ x: this.offset.x, y: this.offset.y })
+    this.currentPort.setPosition({ x: this.offset.x, y: this.offset.y })
   }
 
   onPortMove(event: MouseEvent) {
     if (this.isDraggableMoving && this.currentPort) {
       const x = event.offsetX - 5 - this.offset.x
       const y = event.offsetY - 5 - this.offset.y
-      this.currentPort.updatePosition({ x, y })
+      this.currentPort.setPosition({ x, y })
     }
   }
 
   onPortMoveEnd(event: any) {
     this.isDraggableMoving = false
-  }
-
-  findOffset(element: HTMLElement, parent: HTMLElement) {
-    let currentParent = element.parentElement
-    const offset = {
-      x: element.offsetLeft,
-      y: element.offsetTop
-    }
-    while (currentParent) {
-      if (currentParent === parent) {
-        break
-      }
-      offset.x += currentParent.offsetLeft
-      offset.y += currentParent.offsetTop
-      currentParent = currentParent.parentElement
-    }
-    return offset
   }
 
   async onStageDropHandler(event: any) {
@@ -202,8 +183,8 @@ export default class ConnectedGraph extends Vue {
   onConnect(ports: NodePort[]) {
     const element1 = ports[0].$el as HTMLElement
     const element2 = ports[1].$el as HTMLElement
-    const offset1 = this.findOffset(element1, this.$el as HTMLElement)
-    const offset2 = this.findOffset(element2, this.$el as HTMLElement)
+    const offset1 = findOffset(element1, this.$el as HTMLElement)
+    const offset2 = findOffset(element2, this.$el as HTMLElement)
 
     offset1.x += 10
     offset1.y += 10
@@ -211,8 +192,8 @@ export default class ConnectedGraph extends Vue {
     offset2.x += 10
     offset2.y += 10
 
-    ports[0].updatePosition(offset1)
-    ports[1].updatePosition(offset2)
+    ports[0].setPosition(offset1)
+    ports[1].setPosition(offset2)
   }
 
   onDisconnect(ports: NodePort[]) {

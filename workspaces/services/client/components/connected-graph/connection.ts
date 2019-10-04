@@ -23,3 +23,20 @@ export class PortConnection {
     return `0 0, 0 0`
   }
 }
+
+export function findOffset(element: HTMLElement, parent: HTMLElement) {
+  let currentParent = element.parentElement
+  const offset = {
+    x: element.offsetLeft,
+    y: element.offsetTop
+  }
+  while (currentParent) {
+    if (currentParent === parent) {
+      break
+    }
+    offset.x += currentParent.offsetLeft
+    offset.y += currentParent.offsetTop
+    currentParent = currentParent.parentElement
+  }
+  return offset
+}

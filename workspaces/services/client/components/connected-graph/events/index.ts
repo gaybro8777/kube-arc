@@ -6,7 +6,9 @@ export enum PortEvent {
 
 export enum ConnectionEvent {
   CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected'
+  DISCONNECTED = 'disconnected',
+  MULTI_CONNECT = 'multi-connect',
+  MULTI_DISCONNECT = 'multi-disconnect'
 }
 
 export enum NodeEvent {

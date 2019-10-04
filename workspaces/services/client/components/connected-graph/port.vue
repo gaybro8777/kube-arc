@@ -52,14 +52,15 @@
 </style>
 
 <script lang="ts">
-import { Vue, Component } from 'vue-property-decorator'
+import { Vue, Component, Prop } from 'vue-property-decorator'
 import { Action } from 'vuex-class'
 import { Point } from '../common/types/point'
 import { PortEvent, ConnectionEvent } from './events'
-import { PortConnection } from './connection'
+import { PortConnection, findOffset } from './connection'
 
 @Component({})
 export default class NodePort extends Vue {
+  @Prop({ default: () => -1 }) serial!: number
   // Store actions
   @Action('graph/getPort') getPort!: (portId: string) => any
   @Action('graph/addPort') addPort!: (port: NodePort) => string
@@ -69,6 +70,7 @@ export default class NodePort extends Vue {
   position = { ...this.initialPosition }
   anchorPoint = { ...this.initialPosition }
   isMoving = false
+  isMultiPort = true
   portId: string = ''
   connection: PortConnection | null = null
   connectedPort: NodePort | null = null
@@ -103,9 +105,15 @@ export default class NodePort extends Vue {
     this.$emit(PortEvent.MOVE_END, { port: this })
   }
 
-  updatePosition(position: Point) {
+  setPosition(position: Point) {
     this.position.x = position.x
     this.position.y = position.y
+  }
+
+  updatePosition(parentElement: HTMLElement) {
+    const offset = findOffset(this.$el as HTMLElement, parentElement)
+    this.position.x = offset.x + 10
+    this.position.y = offset.y + 10
   }
 
   anchor(pos?: Point) {
@@ -122,7 +130,6 @@ export default class NodePort extends Vue {
     this.anchorPoint.y = this.initialPosition.y
   }
 
-  // Receptor handlers
   onDragOver(event: any) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'move'
@@ -134,16 +141,24 @@ export default class NodePort extends Vue {
     event.dataTransfer.dropEffect = 'move'
     const portId = event.dataTransfer.getData('text/plain')
     let droppedPort = await this.getPort(portId)
-    const element = this.$el as HTMLElement
-    const x = element.offsetLeft
-    const y = element.offsetTop
 
     if (this.connectedPort && this !== droppedPort) {
-      console.warn(`Port ${droppedPort.portId} not accepted`)
-      this.$emit(ConnectionEvent.DISCONNECTED, [droppedPort])
+      if (!this.isMultiPort) {
+        console.warn(`Port ${droppedPort.portId} not accepted`)
+        this.$emit(ConnectionEvent.DISCONNECTED, [droppedPort])
+      } else {
+        console.info(
+          `Port multi-connect [${droppedPort.portId}, ${this.portId}]`
+        )
+        this.$emit(ConnectionEvent.MULTI_CONNECT, {
+          droppedPort,
+          receivedPort: this
+        })
+      }
       return
     }
 
+    // If the port is connected take the connected port
     if (droppedPort.connectedPort) {
       const connectedPort = droppedPort.connectedPort
       droppedPort.connectedPort = null

@@ -1,20 +1,23 @@
 <template>
-  <div ref="node" class="connected__node">
+  <div class="connected__node">
     <div class="port-area">
       <component
         :is="NodePort"
         v-for="port in ports"
         :key="port.serial"
         ref="ports"
+        :serial="port.serial"
         :style="portStyle(port)"
         @move="onMove"
         @moveEnd="onMoveEnd"
         @moveStart="onMoveStart"
         @connected="onConnect"
+        @multi-connect="onMultiConnect"
+        @multi-disconnect="onMultiDisonnect"
         @disconnected="onDisconnect"
       ></component>
     </div>
-    <div class="node-area" @mousedown="onMouseDown">
+    <div ref="nodeArea" class="node-area" @mousedown="onMouseDown">
       <div ref="header" class="header">
         <node-status></node-status>
         <div class="action-group">
@@ -128,6 +131,7 @@ import { randomId } from '../common/utils'
 import NodePort from './port.vue'
 import NodeStatus from './node-status.vue'
 import { PortEvent, ConnectionEvent, NodeEvent } from './events'
+import { PortConnection } from './connection'
 
 type PortDescriptor = {
   serial: number
@@ -199,13 +203,63 @@ export default class GraphNode extends Vue {
     this.$emit(ConnectionEvent.CONNECTED, event)
   }
 
+  onMultiConnect({ droppedPort }: { droppedPort: NodePort }) {
+    const nodeArea = this.$refs.nodeArea as HTMLElement
+    const height = nodeArea.offsetHeight
+    const width = nodeArea.offsetWidth
+    const serial = this.ports.length
+    this.ports.push({
+      serial,
+      position: { x: 0, y: '100%/2 + 10px' },
+      config: {}
+    })
+    const gap = 5
+    const leftPorts = this.ports.filter((p) => p.position.x === 0)
+    const numPorts = leftPorts.length
+    const portHeight = 20 + gap
+    const totalGap = (numPorts - 1) * gap
+    const totalPortsHeight = numPorts * 20 + totalGap
+    const offsetY = 20 + Math.round((height - totalPortsHeight) / 2)
+
+    let y = offsetY
+    leftPorts.forEach((p) => {
+      p.position.y = y + 'px'
+      y += portHeight
+    })
+
+    this.$nextTick(() => {
+      const ports = this.$refs.ports as NodePort[]
+      const newPort = ports.find((port) => port.serial === serial)
+      if (droppedPort) {
+        droppedPort.connect(newPort)
+        newPort.connect(droppedPort)
+
+        const connection: PortConnection =
+          droppedPort.connection || newPort.connection
+
+        if (connection) {
+          connection.ports = [newPort, droppedPort]
+        }
+
+        newPort.connection = connection
+        droppedPort.connection = connection
+        this.$emit(ConnectionEvent.CONNECTED, [newPort, droppedPort])
+      }
+      ports.forEach((port) => port.updatePosition(this.$el.parentElement))
+    })
+  }
+
+  onMultiDisonnect(event: any) {
+    this.$emit(ConnectionEvent.MULTI_DISCONNECT, event)
+  }
+
   onDisconnect(event: any) {
     this.$emit(ConnectionEvent.DISCONNECTED, event)
   }
 
   onMouseMove(event: MouseEvent) {
     event.preventDefault()
-    const el = this.$refs.node as HTMLElement
+    const el = this.$el as HTMLElement
     const width = el.offsetWidth
     const height = el.offsetHeight
     const halfHeight = Math.round(height / 2)
@@ -215,9 +269,9 @@ export default class GraphNode extends Vue {
     const left = event.clientX - this.offset.x
     el.style.top = top + 'px'
     el.style.left = left + 'px'
-    const [port0, port1]: NodePort[] = this.$refs.ports as NodePort[]
-    port0.updatePosition({ x: left + width + 10, y: top + halfHeight })
-    port1.updatePosition({ x: left - 10, y: top + halfHeight })
+    const ports: NodePort[] = this.$refs.ports as NodePort[]
+    const parent = el.parentElement
+    ports.forEach((port) => port.updatePosition(parent))
   }
 
   onMouseDown(event: MouseEvent) {
