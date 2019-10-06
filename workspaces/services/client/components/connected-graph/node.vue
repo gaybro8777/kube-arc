@@ -228,14 +228,15 @@ export default class GraphNode extends Vue {
     })
 
     this.$nextTick(() => {
+      const element = this.$el as HTMLElement
+      const parentElement = element.parentElement
       const ports = this.$refs.ports as NodePort[]
       const newPort = ports.find((port) => port.serial === serial)
-      if (droppedPort) {
+      if (droppedPort && newPort) {
         droppedPort.connect(newPort)
         newPort.connect(droppedPort)
 
-        const connection: PortConnection =
-          droppedPort.connection || newPort.connection
+        const connection = droppedPort.connection || newPort.connection
 
         if (connection) {
           connection.ports = [newPort, droppedPort]
@@ -245,7 +246,9 @@ export default class GraphNode extends Vue {
         droppedPort.connection = connection
         this.$emit(ConnectionEvent.CONNECTED, [newPort, droppedPort])
       }
-      ports.forEach((port) => port.updatePosition(this.$el.parentElement))
+      if (parentElement !== null) {
+        ports.forEach((port) => port.updatePosition(parentElement))
+      }
     })
   }
 
@@ -271,7 +274,9 @@ export default class GraphNode extends Vue {
     el.style.left = left + 'px'
     const ports: NodePort[] = this.$refs.ports as NodePort[]
     const parent = el.parentElement
-    ports.forEach((port) => port.updatePosition(parent))
+    if (parent) {
+      ports.forEach((port) => port.updatePosition(parent))
+    }
   }
 
   onMouseDown(event: MouseEvent) {

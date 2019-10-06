@@ -150,6 +150,13 @@ export default class NodePort extends Vue {
         console.info(
           `Port multi-connect [${droppedPort.portId}, ${this.portId}]`
         )
+        // If the port is connected take the connected port
+        if (droppedPort.connectedPort) {
+          const connectedPort = droppedPort.connectedPort
+          droppedPort.connectedPort = null
+          droppedPort.disconnect()
+          droppedPort = connectedPort
+        }
         this.$emit(ConnectionEvent.MULTI_CONNECT, {
           droppedPort,
           receivedPort: this

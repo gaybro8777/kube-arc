@@ -1,7 +1,7 @@
 <template>
   <div class="app-logo">
     <app-icon class="app-icon--32"></app-icon>
-    <div class="slogan">KUBE ARC</div>
+    <div class="slogan">Kuberneteasy</div>
   </div>
 </template>
 
