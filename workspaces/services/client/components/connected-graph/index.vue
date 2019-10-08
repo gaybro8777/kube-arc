@@ -17,8 +17,8 @@
       @moveStart="onPortMoveStart"
       @move="onPortMove"
       @moveEnd="onPortMoveEnd"
-      @connected="onConnect"
-      @disconnected="onDisconnect"
+      @connect="onConnect"
+      @disconnect="onDisconnect"
       @delete="onDeleteNode"
     ></component>
     <!-- Port Connections -->
@@ -169,7 +169,7 @@ export default class ConnectedGraph extends Vue {
     const droppedPort = await this.getPort(portId)
 
     if (droppedPort) {
-      console.log('connection:', droppedPort.connection.id)
+      console.log(`💔 connection: ${droppedPort.connection.id} removed`)
       this.removeConnection(droppedPort.connection)
       droppedPort.disconnect()
     }
@@ -217,7 +217,8 @@ export default class ConnectedGraph extends Vue {
 
     for (const c of connectionsToDelete) {
       const index = this.connections.indexOf(c)
-      this.connections.splice(index, 1)
+      const [deletedConnection] = this.connections.splice(index, 1)
+      deletedConnection.ports = []
     }
 
     const found = this.nodes.find((n) => n.id === node.id)

@@ -57,10 +57,13 @@ import { Action } from 'vuex-class'
 import { Point } from '../common/types/point'
 import { PortEvent, ConnectionEvent } from './events'
 import { PortConnection, findOffset } from './connection'
+import GraphNode from './node.vue'
 
 @Component({})
 export default class NodePort extends Vue {
   @Prop({ default: () => -1 }) serial!: number
+  @Prop({ default: () => null }) parentNode!: GraphNode
+  @Prop({ default: () => false }) isDummy!: boolean
   // Store actions
   @Action('graph/getPort') getPort!: (portId: string) => any
   @Action('graph/addPort') addPort!: (port: NodePort) => string
@@ -77,7 +80,9 @@ export default class NodePort extends Vue {
 
   async mounted() {
     this.portId = await this.addPort(this)
-    console.log('Port ID: ', this.portId)
+    if (!this.isDummy) {
+      console.log('Port ID: ', this.portId)
+    }
   }
 
   onDragStart(event: DragEvent) {
@@ -136,21 +141,25 @@ export default class NodePort extends Vue {
   }
 
   async onDrop(event: any) {
+    if (this.isDummy) return
     event.preventDefault()
     event.stopPropagation()
     event.dataTransfer.dropEffect = 'move'
     const portId = event.dataTransfer.getData('text/plain')
-    let droppedPort = await this.getPort(portId)
+    const droppedPort = await this.getPort(portId)
+    this.dropPort(droppedPort)
+  }
 
+  dropPort(droppedPort) {
     if (this.connectedPort && this !== droppedPort) {
       if (!this.isMultiPort) {
         console.warn(`Port ${droppedPort.portId} not accepted`)
-        this.$emit(ConnectionEvent.DISCONNECTED, [droppedPort])
+        this.$emit(ConnectionEvent.DISCONNECT, [droppedPort])
       } else {
         console.info(
           `Port multi-connect [${droppedPort.portId}, ${this.portId}]`
         )
-        // If the port is connected take the connected port
+        // If the port is CONNECT take the CONNECT port
         if (droppedPort.connectedPort) {
           const connectedPort = droppedPort.connectedPort
           droppedPort.connectedPort = null
@@ -165,7 +174,7 @@ export default class NodePort extends Vue {
       return
     }
 
-    // If the port is connected take the connected port
+    // If the port is CONNECT take the CONNECT port
     if (droppedPort.connectedPort) {
       const connectedPort = droppedPort.connectedPort
       droppedPort.connectedPort = null
@@ -174,13 +183,15 @@ export default class NodePort extends Vue {
     }
 
     if (droppedPort === this) {
-      this.$emit(ConnectionEvent.DISCONNECTED, [this])
+      this.$emit(ConnectionEvent.DISCONNECT, [this])
       return
     }
 
     if (droppedPort) {
       droppedPort.connect(this)
       this.connect(droppedPort)
+
+      console.log(`🔌 Ports [${this.portId}, ${droppedPort.portId}] connected`)
 
       const connection: PortConnection =
         droppedPort.connection || this.connection
@@ -191,12 +202,11 @@ export default class NodePort extends Vue {
 
       this.connection = connection
       droppedPort.connection = connection
-      this.$emit(ConnectionEvent.CONNECTED, [this, droppedPort])
+      this.$emit(ConnectionEvent.CONNECT, [this, droppedPort])
     }
   }
 
   connect(port: NodePort) {
-    console.log(`Ports [${this.portId}, ${port.portId}] connected`)
     if (this.connection === null && port === this) return
     this.color = '#f56c6c'
     this.isMoving = false
@@ -204,7 +214,9 @@ export default class NodePort extends Vue {
   }
 
   disconnect(ports?: NodePort[]) {
-    console.log(`Port ${this.portId} disconnected`)
+    if (!this.isDummy) {
+      console.log(`Port ${this.portId} disconnected`)
+    }
 
     this.isMoving = false
     this.connection = null
@@ -214,6 +226,7 @@ export default class NodePort extends Vue {
       connectedPort.disconnect()
     }
     this.reset()
+    this.$emit(ConnectionEvent.DISCONNECTED, [this])
   }
 }
 </script>

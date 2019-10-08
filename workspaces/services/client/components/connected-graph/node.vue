@@ -1,6 +1,30 @@
 <template>
   <div class="connected__node">
-    <div class="port-area">
+    <div
+      class="port-area"
+      @mousedown="onPortActive"
+      @mouseover="onPortAreaOver"
+      @mousemove="onPortAreaMove"
+      @mouseleave="onPortAreaLeave"
+      @mouseout="onPortAreaLeave"
+      @dragover="onPortAreaOver"
+      @dragleave="onPortAreaLeave"
+      @drop="onPortAreaDrop"
+    >
+      <!-- Dummy port -->
+      <node-port
+        ref="dummyPort"
+        :style="dummyPortStyle"
+        :parent-node="this"
+        :is-dummy="true"
+        @move="onPortMove"
+        @moveEnd="onPortMoveEnd"
+        @moveStart="onPortMoveStart"
+        @connect="onConnect"
+        @multi-connect="onMultiConnect"
+        @multi-disconnect="onMultiDisonnect"
+        @disconnect="onDisconnect"
+      ></node-port>
       <component
         :is="NodePort"
         v-for="port in ports"
@@ -8,18 +32,22 @@
         ref="ports"
         :serial="port.serial"
         :style="portStyle(port)"
-        @move="onMove"
-        @moveEnd="onMoveEnd"
-        @moveStart="onMoveStart"
-        @connected="onConnect"
+        @move="onPortMove"
+        @moveEnd="onPortMoveEnd"
+        @moveStart="onPortMoveStart"
+        @connect="onConnect"
         @multi-connect="onMultiConnect"
         @multi-disconnect="onMultiDisonnect"
-        @disconnected="onDisconnect"
+        @disconnect="onDisconnect"
+        @disconnected="onDisconnected"
       ></component>
     </div>
     <div ref="nodeArea" class="node-area" @mousedown="onMouseDown">
       <div ref="header" class="header">
         <node-status></node-status>
+        <div class="debug">
+          {{ `[${dummyPortStyle.left}, ${dummyPortStyle.top}]` }}
+        </div>
         <div class="action-group">
           <el-button
             class="tiny-btn"
@@ -60,6 +88,10 @@
 </template>
 
 <style lang="css">
+.debug {
+  font-size: 10px;
+  padding-left: 10px;
+}
 .connected__node {
   position: absolute;
   cursor: move;
@@ -127,11 +159,12 @@
 
 <script lang="ts">
 import { Vue, Component, Prop } from 'vue-property-decorator'
-import { randomId } from '../common/utils'
+import { Action, Getter } from 'vuex-class'
+import { randomId, clamp } from '../common/utils'
 import NodePort from './port.vue'
 import NodeStatus from './node-status.vue'
 import { PortEvent, ConnectionEvent, NodeEvent } from './events'
-import { PortConnection } from './connection'
+import { PortConnection, findOffset } from './connection'
 
 type PortDescriptor = {
   serial: number
@@ -150,23 +183,29 @@ export default class GraphNode extends Vue {
   @Prop({ default: () => 'Service' }) name!: string
   @Prop({ default: () => null }) icon!: Vue
 
+  @Action('graph/getPort') getPort!: (portId: string) => any
+
   NodePort = NodePort
 
   data = {
     type: 'service'
   }
 
-  ports: PortDescriptor[] = [
-    {
-      serial: 0,
-      position: { x: '100% - 20px', y: '100%/2 - 10px' },
-      config: {}
-    },
-    { serial: 1, position: { x: 0, y: '100%/2 - 10px' }, config: {} }
-  ]
+  portSerial: number = 0
+  ports: PortDescriptor[] = []
 
   port = { position: { x: 0, y: 0 } }
+  dummyPortStyle = {
+    left: '0',
+    top: '0',
+    display: 'block',
+    opacity: 0,
+    transition: 'opacity 200ms ease 0s'
+  }
   offset = { x: 0, y: 0 }
+  mouseOffset = { x: 0, y: 0 }
+  isPortActive = false
+  isPortDragging = false
   isDragging = false
 
   portStyle(port: PortDescriptor) {
@@ -186,21 +225,154 @@ export default class GraphNode extends Vue {
     }
   }
 
-  onMoveStart(event: any) {
+  mounted() {
+    const element = this.$el as HTMLElement
+    this.offset = findOffset(element, element.parentElement.parentElement)
+  }
+
+  onPortAreaOver(event: MouseEvent) {
+    event.preventDefault()
+    this.dummyPortStyle.display = 'block'
+    this.dummyPortStyle.opacity = 1
+    this.onPortAreaMove(event)
+  }
+
+  onPortAreaLeave(event: MouseEvent) {
+    event.preventDefault()
+    if (this.isPortActive) return
+    this.dummyPortStyle.opacity = 0
+  }
+
+  onPortAreaMove(event: MouseEvent) {
+    event.preventDefault()
+    const { clientX, clientY } = event
+    const element = this.$el as HTMLElement
+    const x = clientX - element.offsetLeft - this.offset.x + 10
+    const y = clientY - element.offsetTop - this.offset.y + 10
+    this.setDummyPortPosition(x, y)
+  }
+
+  setDummyPortPosition(x, y) {
+    const xL = x < 20
+    const xR = x > 200
+    const yT = y < 18
+    const yB = y > 90
+
+    if ((xL && (yT || yB)) || (xR && (yT || yB))) {
+      this.dummyPortStyle.display = 'none'
+      return
+    } else {
+      this.dummyPortStyle.display = 'block'
+    }
+
+    if (yT || yB) {
+      x = clamp(x, 0, 219)
+    } else if (xL) {
+      x = 0
+    } else if (xR) {
+      x = 219
+    }
+
+    if (xL || xR) {
+      y = clamp(y, 18, 90)
+    } else if (yT) {
+      y = 0
+    } else if (yB) {
+      y = 109
+    }
+
+    this.dummyPortStyle.left = x + 'px'
+    this.dummyPortStyle.top = y + 'px'
+  }
+
+  onPortAreaDragover(event) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    const { clientX, clientY } = event
+    const element = this.$el as HTMLElement
+    const x = clientX - element.offsetLeft - this.offset.x + 10
+    const y = clientY - element.offsetTop - this.offset.y + 10
+    this.setDummyPortPosition(x, y)
+  }
+
+  async onPortAreaDrop(event: any) {
+    event.preventDefault()
+    event.stopPropagation()
+    this.dummyPortStyle.opacity = 1
+    this.dummyPortStyle.display = 'block'
+    const dummyPort = this.$refs.dummyPort as NodePort
+    const serial = this.portSerial++
+    let foreignPortSerial
+    let droppedPort
+    if (dummyPort) {
+      {
+        const element = dummyPort.$el as HTMLElement
+        const { offsetLeft: x, offsetTop: y } = element
+        this.ports.push({
+          serial,
+          position: { x: x + 'px', y: y + 'px' },
+          config: {}
+        })
+      }
+      {
+        const portId = event.dataTransfer.getData('text/plain')
+        droppedPort = await this.getPort(portId)
+        const element = droppedPort.$el as HTMLElement
+        const { offsetLeft: x, offsetTop: y } = element
+        if (droppedPort.parentNode) {
+          foreignPortSerial = droppedPort.parentNode.portSerial++
+          droppedPort.parentNode.ports.push({
+            serial: foreignPortSerial,
+            position: { x: x + 'px', y: y + 'px' },
+            config: {}
+          })
+        }
+      }
+      this.$nextTick(() => {
+        // New port
+        const ports = this.$refs.ports as NodePort[]
+        const newPort = ports.find((port) => port.serial === serial)
+
+        // Foreign Port
+        if (droppedPort.parentNode) {
+          const foreignPorts = droppedPort.parentNode.$refs.ports as NodePort[]
+          const newForeignPort = foreignPorts.find(
+            (port) => port.serial === foreignPortSerial
+          )
+          if (newPort && newForeignPort) {
+            newPort.connection = droppedPort.connection
+            setTimeout(() => {
+              newPort.dropPort(newForeignPort)
+            }, 0)
+          }
+        }
+      })
+    }
+  }
+
+  onPortMoveStart(event: any) {
+    this.isPortDragging = true
     this.port = event.port
     this.$emit(PortEvent.MOVE_START, event)
   }
 
-  onMove(event: any) {
+  onPortActive(event: any) {
+    this.isPortActive = true
+  }
+
+  onPortMove(event: any) {
     this.$emit(PortEvent.MOVE, event)
   }
 
-  onMoveEnd(event: any) {
+  onPortMoveEnd(event: any) {
+    this.dummyPortStyle.opacity = 0
+    this.isPortDragging = false
+    this.isPortActive = false
     this.$emit(PortEvent.MOVE_END, event)
   }
 
   onConnect(event: any) {
-    this.$emit(ConnectionEvent.CONNECTED, event)
+    this.$emit(ConnectionEvent.CONNECT, event)
   }
 
   onMultiConnect({ droppedPort }: { droppedPort: NodePort }) {
@@ -244,7 +416,7 @@ export default class GraphNode extends Vue {
 
         newPort.connection = connection
         droppedPort.connection = connection
-        this.$emit(ConnectionEvent.CONNECTED, [newPort, droppedPort])
+        this.$emit(ConnectionEvent.CONNECT, [newPort, droppedPort])
       }
       if (parentElement !== null) {
         ports.forEach((port) => port.updatePosition(parentElement))
@@ -257,7 +429,20 @@ export default class GraphNode extends Vue {
   }
 
   onDisconnect(event: any) {
-    this.$emit(ConnectionEvent.DISCONNECTED, event)
+    this.$emit(ConnectionEvent.DISCONNECT, event)
+  }
+
+  onDisconnected(ports: NodePort[]) {
+    this.dummyPortStyle.opacity = 0
+    const dummyPort = this.$refs.dummyPort as NodePort
+    dummyPort.connection = null
+    ports.forEach((port) => {
+      const found = this.ports.find((_port) => _port.serial === port.serial)
+      if (found) {
+        const index = this.ports.indexOf(found)
+        this.ports.splice(index, 1)
+      }
+    })
   }
 
   onMouseMove(event: MouseEvent) {
@@ -268,13 +453,13 @@ export default class GraphNode extends Vue {
     const halfHeight = Math.round(height / 2)
     this.port.position.y = event.clientY
     this.port.position.x = event.clientX
-    const top = event.clientY - this.offset.y
-    const left = event.clientX - this.offset.x
+    const top = event.clientY - this.mouseOffset.y
+    const left = event.clientX - this.mouseOffset.x
     el.style.top = top + 'px'
     el.style.left = left + 'px'
     const ports: NodePort[] = this.$refs.ports as NodePort[]
     const parent = el.parentElement
-    if (parent) {
+    if (parent && ports) {
       ports.forEach((port) => port.updatePosition(parent))
     }
   }
@@ -284,8 +469,8 @@ export default class GraphNode extends Vue {
     document.addEventListener('mouseup', this.onMouseUp)
     document.addEventListener('mousemove', this.onMouseMove)
     const element = this.$el as HTMLElement
-    this.offset.y = event.clientY - element.offsetTop
-    this.offset.x = event.clientX - element.offsetLeft
+    this.mouseOffset.y = event.clientY - element.offsetTop
+    this.mouseOffset.x = event.clientX - element.offsetLeft
     this.isDragging = true
   }
 
