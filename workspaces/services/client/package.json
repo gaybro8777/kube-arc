@@ -27,7 +27,7 @@
     "cross-env": "^5.2.0",
     "element-ui": "^2.4.11",
     "express": "^4.16.4",
-    "nuxt": "2.9.2"
+    "nuxt": "3.12.4"
   },
   "devDependencies": {
     "@01/launcher": "1.0.11",
